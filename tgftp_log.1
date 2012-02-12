@@ -1,0 +1,48 @@
+.TH TGFTP_LOG 1 "12 Feb 2012" "version 0.0.1" "User Commands"
+.SH NAME
+tgftp_log - Extracts attribute values from tgftp logfiles
+
+.SH SYNOPSIS
+.B tgftp_log
+.BI "--get-attribute|-a " "tgftpLogfileAttribute"
+.BI "--file|-f " "tgftpLogfile"
+
+.SH DESCRIPTION
+.B tgftp_log
+is a helper script to extract single attribute values from
+.B tgftp
+logfiles.
+
+.SH OPTIONS
+The options are as follows:
+
+.TP 10
+.BI "--get-attribute|-a " "tgftpLogfileAttribute"
+Determine the tgftp logfile attribute to extract. Possible attributes are:
+
+.I GSIFTP_TRANSFER_LOG_COMMENT 
+.br
+.I GSIFTP_TRANSFER_COMMAND 
+.br
+.I GSIFTP_TRANSFER_COMMAND_OUTPUT
+.br
+.I GSIFTP_TRANSFER_START
+.br
+.I GSIFTP_TRANSFER_END
+.br
+.I GSIFTP_TRANSFER_ERROR
+.br
+.I GSIFTP_TRANSFER_RATE
+
+.TP
+.BI "--file|-f " "tgftpLogfile"
+Determine the
+.B tgftp
+logfile to extract data from.
+
+.SH AUTHOR
+Frank Scheiner
+
+.SH "SEE ALSO"
+.BR tgftp (1)
+
