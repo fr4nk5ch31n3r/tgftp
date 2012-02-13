@@ -1348,7 +1348,7 @@ if [[ -e .GSIFTP_COMMAND_KILLED ]]; then
 fi
 
 #  save commandline
-local commmandLine="$0 $@"
+commandLine="$0 $@"
 
 #  correct number of params?
 if [[ "$#" -lt "1" || "$#" == "3" ]]; then

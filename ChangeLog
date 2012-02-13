@@ -1,6 +1,13 @@
-2011-12-17  Frank Scheiner  <frank.scheiner@web.de>
+2012-02-12  Frank Scheiner  <frank.scheiner@web.de>
 
 *0.4.1 (tgftp):
 Introduced new option "--force-log-overwrite" to force tgftp to overwrite
 existing logfiles. Updated help and man page.
 
+2012-02-13  Frank Scheiner  <frank.scheiner@web.de>
+
+*0.4.1a (tgftp):
+Corrected two errors (local keyword used outside of a function and typo
+on variable name).
+
+Corrected ChangeLog date of previous entry.
