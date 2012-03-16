@@ -11,3 +11,19 @@ Corrected two errors (local keyword used outside of a function and typo
 on variable name).
 
 Corrected ChangeLog date of previous entry.
+
+2012-03-16  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp distribution v0.4.1b:
+Introduced own version number for tgftp distribution. The version number of
+the dist. is no longer determined by tgftp itself, as updates to other parts of
+the distribution would not justify a new version number for tgftp.
+
+tgftp.1:
+Adapted manual page to new functionalities introduced in tgftp v0.4.1.
+
+modulefile:
+Reintegrated a modulfile for tgftp.
+
+Also readded PDF versions of manual pages. Adapted INSTALL file.
+
