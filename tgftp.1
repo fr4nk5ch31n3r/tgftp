@@ -1,4 +1,4 @@
-.TH TGFTP 1 "12 Feb 2012" "version 0.4.1" "User Commands"
+.TH TGFTP 1 "16 Mar 2012" "version 0.4.1a" "User Commands"
 .SH NAME
 tgftp \- The GridFTP test script
 
@@ -33,7 +33,7 @@ is a wrapper script for
 to ease testing and documentation of GridFTP performance for specific
 connections. The generated
 .B guc
-command, it's output and the reached performance are logged to a file named like
+command, its output and the reached performance are logged to a file named like
 the following:
 
 .I yyyymmdd_H:Mh_$$_testgftp.sh.log
@@ -83,15 +83,22 @@ The options are as follows:
 
 .TP
 .BI "[--source|-s " "gsiftpSourceUrl" "]"
-Determine the source URL for the transfer.
+Determine the source URL for the transfer to test. If the 
+.I "gsiftpParameters "
+contain a "-f"  and provide a file with guc source and destination URLs, this
+option can be omitted.
 
 .TP
 .BI "[--target|-t " "gsiftpTargetUrl" "]"
-Determine the target URL for the transfer to test.
+Determine the target URL for the transfer to test. If the 
+.I "gsiftpParameters "
+contain a "-f"  and provide a file  with guc source and destination URLs, this
+option can be omitted.
 
 .TP
 .B "[--force-log-overwrite]"
-Force overwriting of existing tgtfp logfiles.
+By default tgftp refuses to overwrite existing tgftp logfiles. This option
+forces overwriting of existing tgtfp logfiles.
 
 .TP
 .B [--help]

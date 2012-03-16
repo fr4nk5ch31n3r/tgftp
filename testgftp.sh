@@ -461,7 +461,9 @@ General Options:
                         with guc source and destination URLs, this option can be
                         omitted.
 
-[--force-log-overwrite] Force overwriting of existing tgtfp logfiles.
+[--force-log-overwrite] By default tgftp refuses to overwrite existing tgftp
+                        logfiles. This option forces overwriting of existing
+                        tgtfp logfiles.
 
 [--help]                Prints out this help message.
 
