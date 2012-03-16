@@ -13,8 +13,8 @@ Contents:
 (1) Dependencies:
 ------------------
 
-To run the scripts in this distribution (namely "tgftp" and "tgftp_log"), some
-dependencies have to be met first. These scripts need the following binaries in
+To run the tool in this distribution (namely "tgftp" and "tgftp_log"), some
+dependencies have to be met first. These tools need the following binaries in
 $PATH for operation:
 
 * uname
@@ -50,19 +50,18 @@ to the scripts will be created in "path/tgftp/bin/".
 (2.1) Modulefile:
 ------------------
 
-To ease usage of this tool for DEISA users a DEISA Modules Enviroment (DME)
-compatible modulefile has been created. All related files are stored below
-"./modulefiles". For installation copy the "./modulefiles/tools/tgftp/" dir to
-your DME tools dir. The local configuration file in
-"./modulefiles/sitelocal/tools/" goes to your DME "[...]/sitelocal/tools" dir.
-After installing the modulefile please adapt the local configuration file to
-your needs.
+To ease usage of this tool for users that have a "modules environment"*
+available, a modulefile has been created. All related files are stored below
+"./modulefiles". After installing the modulefile please adapt the local
+configuration file to your needs.
+___________
+*) modules environment <http://en.wikipedia.org/wiki/Modules_Environment>
 
 (3) Uninstallation:
 --------------------
 
 For uninstallation just run the link "./uninstall.sh". This will remove the
-"testgftp.sh" script and its link from "$HOME/bin". If you add a path to
-"./install.sh", the tgftp script will be removed from in "path/tgftp/bin/"
-instead.
+"tgftp" tools and its links from "$HOME/opt/" and "$HOME/bin"
+respectively. If you add a path to "./uninstall.sh", the tgftp tools will be
+removed from there instead.
 
