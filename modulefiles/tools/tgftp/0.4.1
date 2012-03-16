@@ -1,0 +1,56 @@
+#%Module
+
+# tgftp/0.4.1 modulefile
+
+set ModulefileVersion "0.2"
+
+set VERSION [file tail [module-info name]]
+
+module-whatis "Set environment variables to enable the usage of the tgftp $VERSION tools."
+
+
+# Include site local dependencies
+if { [ file exists "$env(MODULEFILES)/sitelocal/tools/tgftp-$VERSION" ] } {
+   source "$env(MODULEFILES)/sitelocal/tools/tgftp-$VERSION"
+} else {
+   # Exit with an error if the file containing local dependencies does not exist
+   puts stderr "Required file $env(MODULEFILES)/sitelocal/tools/tgftp-$VERSION can not be found"
+   break
+}
+
+#  preload required modulefiles
+module load globus
+
+#  tgftp needs globus-url-copy (guc)
+prereq globus
+
+# This modulefile cannot be loaded if another nedit modulefile was previously loaded
+conflict tgftp
+
+# Extend the path if necessary to reach the executables
+# -----------------------------------------------------
+prepend-path PATH $TGFTP_DIRECTORY_OF_EXECUTABLES
+
+# Extend the manpath if necessary to reach the man pages
+# ------------------------------------------------------
+prepend-path MANPATH $TGFTP_DIRECTORY_OF_MANUALS
+
+
+if { [module-info mode] != "whatis" } {
+   puts stderr "[module-info mode] tgftp $VERSION (PATH, MANPATH)"
+   puts stderr "In addition to the manual pages (man {tgftp|tgftp_log}), there is also a longer README file available (less $TGFTP_DIRECTORY_OF_DOCS/README).
+}
+
+
+# Help procedure: called by "module help tgftp/0.4.1"
+proc ModulesHelp {} {
+   global env ModulefileVersion
+
+   puts stderr "
+**** $env(MODULES_PREFIX) Common Production Environment ****\n
+modulefile \"[module-info name]\" - Version $ModulefileVersion\n
+Set environment variables to enable the usage of the tgftp $VERSION tools."
+
+   return 0
+}
+
