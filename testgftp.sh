@@ -28,9 +28,12 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.4.1a"
+VERSION="0.4.2"
 
-SUPPORTED_BATCHFILE_VERSIONS="0.4.1"
+#  The version numbering of tgftp tries to follow the "Semantic Versioning 
+#+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
+
+SUPPORTED_BATCHFILE_VERSIONS="0.4.2"
 
 EXIT_VAL="0"
 
@@ -97,7 +100,11 @@ GSIFTP_TRANSFER_LOG_COMMENT=""
 
 MULTIPLIER="1"
 
-FIFO="./.globus-url-copy_output.fifo"
+#  changed for thread safety
+FIFO="./.GSIFTP_TRANSFER_COMMAND_output.fifo.$$"
+#FIFO="./$( mktemp .GSIFTP_TRANSFER_COMMAND_output.fifo_XXXXXX)"
+GSIFTP_TRANSFER_COMMAND="./.GSIFTP_TRANSFER_COMMAND.$$"
+#GSIFTP_TRANSFER_COMMAND="./$( mktemp .GSIFTP_TRANSFER_COMMAND_XXXXXX )"
 
 #  autotuning variables
 #  parameter config permutation (as array)
@@ -948,6 +955,7 @@ process_batchfile()
 	#echo "DEBUG: Sourced \"batchfile_v0.2.8.shlib\"!"
 
 	#  variables
+        local TGFTP_COMMAND="./$( mktemp .TGFTP_COMMAND_XXXXXX )"
 	local TGFTP_COMMAND_EXIT_VALUE="0"
 	local EXEC_COUNTER="0"
 	local DATA_LINE_NUMBER=0
@@ -1159,7 +1167,7 @@ process_batchfile()
 						"$GSIFTP_TRANSFER_LOG_COMMENT_PARAM" '"$GSIFTP_TRANSFER_LOG_COMMENT"' \
 						"$GSIFTP_TRANSFER_PRE_COMMAND_PARAM" '"$GSIFTP_TRANSFER_PRE_COMMAND"' \
 						"$GSIFTP_TRANSFER_POST_COMMAND_PARAM" '"$GSIFTP_TRANSFER_POST_COMMAND"' \
-						"--" "$GSIFTP_PARAMS" | tee .TGFTP_COMMAND
+						"--" "$GSIFTP_PARAMS" | tee "$TGFTP_COMMAND"
 			else
 				eval echo $0 	--source "$GSIFTP_SOURCE_URL" \
 						--target "$GSIFTP_TARGET_URL" \
@@ -1169,10 +1177,10 @@ process_batchfile()
 						"$GSIFTP_TRANSFER_LOG_COMMENT_PARAM" '"$GSIFTP_TRANSFER_LOG_COMMENT"' \
 						"$GSIFTP_TRANSFER_PRE_COMMAND_PARAM" '"$GSIFTP_TRANSFER_PRE_COMMAND"' \
 						"$GSIFTP_TRANSFER_POST_COMMAND_PARAM" '"$GSIFTP_TRANSFER_POST_COMMAND"' \
-						"--" "$GSIFTP_PARAMS" > .TGFTP_COMMAND
+						"--" "$GSIFTP_PARAMS" > "$TGFTP_COMMAND"
 			fi
 
-			bash .TGFTP_COMMAND &>/dev/null &
+			bash "$TGFTP_COMMAND" &>/dev/null &
 
 			TGFTP_COMMAND_PID="$!"
 
@@ -1211,13 +1219,13 @@ process_batchfile()
 				fi
 				#autotuning#####################################
 
-				rm -f .TGFTP_COMMAND
+				rm -f "$TGFTP_COMMAND"
 			else
 				#echo "boing!"
 				if [[ ! $autoTuning -eq 0 ]]; then
 					echo " Test #${DATA_LINE_NUMBER}_${EXEC_COUNTER} failed!"
 				fi
-				mv .TGFTP_COMMAND TGFTP_COMMAND_#$DATA_LINE_NUMBER			
+				mv "$TGFTP_COMMAND" "${TGFTP_COMMAND}_#$DATA_LINE_NUMBER"
 			fi
 
 			EXEC_COUNTER=$(($EXEC_COUNTER + 1))
@@ -1335,7 +1343,7 @@ kill_after_timeout()
                 kill "$KPID" &>/dev/null
 
                 #  indicate that the pid was killed
-                touch .GSIFTP_COMMAND_KILLED
+                touch "${GSIFTP_TRANSFER_COMMAND}_KILLED"
                 RETURN_VAL="0"
         else
                 RETURN_VAL="1"
@@ -1345,8 +1353,8 @@ kill_after_timeout()
 }
 
 #  remove indicator
-if [[ -e .GSIFTP_COMMAND_KILLED ]]; then
-        rm - f .GSIFTP_COMMAND_KILLED &>/dev/null
+if [[ -e "${GSIFTP_TRANSFER_COMMAND}_KILLED" ]]; then
+        rm - f "${GSIFTP_TRANSFER_COMMAND}_KILLED" &>/dev/null
 fi
 
 #  save commandline
@@ -1369,7 +1377,7 @@ while [[ "$1" != "" ]]; do
 	#+ if parameters are mispositioned.
 	if [[   "$1" != "--help" && \
 		"$1" != "--help-batchfile" && \
-        "$1" != "--force-log-overwrite" && \
+                "$1" != "--force-log-overwrite" && \
 		"$1" != "--source" && "$1" != "-s" && \
 		"$1" != "--target" && "$1" != "-t" && \
 		"$1" != "--connection-test" && "$1" != "-c" && \
@@ -1417,7 +1425,7 @@ while [[ "$1" != "" ]]; do
     #  "--force-log-overwrite"
 	elif [[ "$1" == "--force-log-overwrite" ]]; then
 		if [[ "$FORCE_LOG_OVERWRITE_SET" != "0" ]]; then
-            shift 1
+                        shift 1
 			FORCE_LOG_OVERWRITE_SET="0"
 		else
 			#  duplicate usage of this parameter
@@ -1645,7 +1653,8 @@ fi
 ################################################################################
 #  exit on Control-C
 ################################################################################
-trap 'rm_fifo $FIFO;rm -f .GSIFTP_COMMAND_KILLED $$_testgftp.sh.log &>/dev/null;exit 1' 2
+trap 'rm_fifo $FIFO;rm -f "${GSIFTP_TRANSFER_COMMAND}_KILLED" "$GSIFTP_TRANSFER_COMMAND" "$$_testgftp.sh.log"; trap SIGINT; /bin/kill -SIGINT $$' SIGINT
+#trap 'echo "SIGINT caught"; trap SIGINT; /bin/kill -SIGINT $$' SIGINT
 
 ################################################################################
 #  execute pre-command if needed
@@ -1663,6 +1672,8 @@ fi
 create_fifo $FIFO
 
 #  let tee listen to it
+#  TODO:
+#+ Check if this is thread safe!
 tee $$_testgftp.sh.log < $FIFO &
 
 
@@ -1686,9 +1697,9 @@ echo 	"globus-url-copy" \
 	"$GSIFTP_PARAMS" \
 	"$GSIFTP_SOURCE_URL" \
 	"$GSIFTP_TARGET_URL" \
-	"&> $FIFO" > .GSIFTP_TRANSFER_COMMAND
+	"&>$FIFO" > "$GSIFTP_TRANSFER_COMMAND"
 
-bash .GSIFTP_TRANSFER_COMMAND &
+bash "$GSIFTP_TRANSFER_COMMAND" &
 #cat .GSIFTP_TRANSFER_COMMAND
 #exit 0
 
@@ -1756,14 +1767,31 @@ fi
 #  save "globus-url-copy" command
 echo -en \
 "<GSIFTP_TRANSFER_COMMAND>\n"\
-$(cat .GSIFTP_TRANSFER_COMMAND | $SED_BIN -e 's/\ &>.*//')\
+$(cat "$GSIFTP_TRANSFER_COMMAND" | $SED_BIN -e 's/\ &>.*//')\
 "\n</GSIFTP_TRANSFER_COMMAND>\n"\
 >> "$GSIFTP_TRANSFER_LOG_FILENAME"
 
 #  remove temp file
-rm -f .GSIFTP_TRANSFER_COMMAND
+rm -f "$GSIFTP_TRANSFER_COMMAND"
 ################################################################################
 
+
+#  Currently guc (<= v8.2) does exit on SIGINT unconventionally, meaning it
+#+ catches a SIGINT, but after doing its internal cleanup and writing out a
+#+ possible dumpfile, it does not reset the SIGINT handler to the default SIGINT
+#+ handler and kills itself with SIGINT, but simply exits normally (leading to
+#+ "0" as exit value in the bash shell). "Correct" would be an exit value of
+#+ "130" (which is 128 + <SIGNAL>, with <SIGNAL> being SIGINT, which is "2").
+#
+#  See <http://www.cons.org/cracauer/sigint.html> for an elaborate discussion.
+
+#  As the situation won't solve anytime soon, we will try to detect if guc was
+#+ SIGINTed by grepping for the string "^Cancelling copy...$", which is written
+#+ out by guc if it was interrupted.
+_gucSIGINTed=0
+if grep '^Cancelling copy...$' < $$_testgftp.sh.log &>/dev/null; then
+        _gucSIGINTed=1
+fi
 
 #  save output of "globus-url-copy" command
 echo -en \
@@ -1796,8 +1824,8 @@ echo -en \
 
 
 #  did the globus-url-copy command time out and was killed?
-if [[ -e .GSIFTP_COMMAND_KILLED ]]; then
-        rm - f .GSIFTP_COMMAND_KILLED &>/dev/null
+if [[ -e "${GSIFTP_TRANSFER_COMMAND}_KILLED" ]]; then
+        rm - f "${GSIFTP_TRANSFER_COMMAND}_KILLED" &>/dev/null
         echo -en \
 "<GSIFTP_TRANSFER_ERROR>\n"\
 "ERROR: \"globus-url-copy\" timed out."\
@@ -1867,13 +1895,19 @@ fi
 ################################################################################
 #  execute post-command if needed
 ################################################################################
-#  post command is only executed if guc returned 0.
-if [[ "$GSIFTP_TRANSFER_POST_COMMAND" != "" && "$GSIFTP_EXIT_VALUE" == "0" ]]; then
+
+
+#  post command is only executed if guc returned 0 and was *not* interrupted.
+if [[ "$GSIFTP_TRANSFER_POST_COMMAND" != "" && \
+      "$GSIFTP_EXIT_VALUE" == "0" && \
+      $_gucSIGINTed -eq 0 ]]; then
 	eval $GSIFTP_TRANSFER_POST_COMMAND &
 	wait $!
 fi
 
 echo -e "\nPlease see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
 
-exit "$EXIT_VAL"
+echo "$GSIFTP_EXIT_VALUE"
+
+exit "$GSIFTP_EXIT_VALUE"
 

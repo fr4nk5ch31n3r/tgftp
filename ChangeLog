@@ -27,3 +27,40 @@ Reintegrated a modulfile for tgftp.
 
 Also readded PDF versions of manual pages. Adapted INSTALL file.
 
+2012-04-15  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.2:
+
+tgftp v0.4.2:
+Versioning of tgftp now tries to conform to the "Semantic Versioning 2.0.0-rc.1"
+specification (see [1] for details).
+
+Adapted tgftp in that way that instances of tgftp running in parallel (and in
+the same current working directory) don't interfere with each other.
+
+tgftp now also behaves "correctly" on SIGINT. See [2] for an elaborate
+discussion about this. Also integrated a workaround into tgftp to handle a guc
+flaw, where guc returns 0 when interrupted with SIGINT. This lead tgftp to
+assume guc finished a transfer when guc was interrupted with a SIGINT in real.
+
+The reason is the following:
+Currently guc (vX.x <= v8.2) does exit on SIGINT unconventionally, meaning it
+catches a SIGINT, but after doing its internal cleanup and writing out a
+possible dumpfile, it does not reset the SIGINT handler to the default SIGINT
+handler andkills itself with SIGINT, but simply exits normally (leading to "0"
+as exit value in the bash shell). "Correct" would be an exit value of "130"
+(which is 128 + <SIGNAL>, with <SIGNAL> being SIGINT, which is "2"). See [2] for
+more details.
+
+The workaround parses the guc log for the string "Cancelling copy...", as guc
+emits this string when interrupted.
+
+As you can imagine, this is not very safe, because if the string changes with
+later versions of guc, tgftp will be hit by this flaw again. But as guc won't be
+patched any time soon, I consider this ok, as it allows a user of gtransfer [3]
+to savely interrupt a data transfer.
+____________
+[1] <http://semver.org>
+[2] <http://www.cons.org/cracauer/sigint.html>
+[3] <https://github.com/fr4nk5ch31n3r/gtransfer>
+
