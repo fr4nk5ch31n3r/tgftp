@@ -28,12 +28,12 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.4.2"
+VERSION="0.4.3"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
 
-SUPPORTED_BATCHFILE_VERSIONS="0.4.2"
+SUPPORTED_BATCHFILE_VERSIONS="$VERSION"
 
 EXIT_VAL="0"
 
@@ -1653,7 +1653,7 @@ fi
 ################################################################################
 #  exit on Control-C
 ################################################################################
-trap 'rm_fifo $FIFO;rm -f "${GSIFTP_TRANSFER_COMMAND}_KILLED" "$GSIFTP_TRANSFER_COMMAND" "$$_testgftp.sh.log"; trap SIGINT; /bin/kill -SIGINT $$' SIGINT
+trap 'rm_fifo $FIFO;rm -f "${GSIFTP_TRANSFER_COMMAND}_KILLED" "$GSIFTP_TRANSFER_COMMAND" "$$_testgftp.sh.log"; trap - SIGINT; /bin/kill -SIGINT $$' SIGINT
 #trap 'echo "SIGINT caught"; trap SIGINT; /bin/kill -SIGINT $$' SIGINT
 
 ################################################################################

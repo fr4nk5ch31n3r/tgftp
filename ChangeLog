@@ -64,3 +64,12 @@ ____________
 [2] <http://www.cons.org/cracauer/sigint.html>
 [3] <https://github.com/fr4nk5ch31n3r/gtransfer>
 
+2012-09-25  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.3:
+
+tgftp v0.4.3:
+The SIGINT handler was not reset to the default handler due to a missing "-"
+between "trap" and "SIGINT" (hence v0.4.2 didn't behave "correctly" on SIGINT).
+This is now fixed.
+
