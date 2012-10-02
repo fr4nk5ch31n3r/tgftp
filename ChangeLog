@@ -73,3 +73,13 @@ The SIGINT handler was not reset to the default handler due to a missing "-"
 between "trap" and "SIGINT" (hence v0.4.2 didn't behave "correctly" on SIGINT).
 This is now fixed.
 
+2012-10-02  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.4:
+
+tgftp v0.4.4:
+Corrected small error in the shabang of the auto-tuning batchjob header. Also
+added a clause that checks if the needed FIFO could be created. If not tgftp
+will exit immediately.
+
+

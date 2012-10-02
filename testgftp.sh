@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.4.3"
+VERSION="0.4.4"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -101,9 +101,9 @@ GSIFTP_TRANSFER_LOG_COMMENT=""
 MULTIPLIER="1"
 
 #  changed for thread safety
-FIFO="./.GSIFTP_TRANSFER_COMMAND_output.fifo.$$"
+FIFO=".GSIFTP_TRANSFER_COMMAND_output.fifo.$$"
 #FIFO="./$( mktemp .GSIFTP_TRANSFER_COMMAND_output.fifo_XXXXXX)"
-GSIFTP_TRANSFER_COMMAND="./.GSIFTP_TRANSFER_COMMAND.$$"
+GSIFTP_TRANSFER_COMMAND=".GSIFTP_TRANSFER_COMMAND.$$"
 #GSIFTP_TRANSFER_COMMAND="./$( mktemp .GSIFTP_TRANSFER_COMMAND_XXXXXX )"
 
 #  autotuning variables
@@ -652,7 +652,7 @@ A pre-/post-command may consist of multiple commands included in one script.
 
 example:
 
-#%tgftp%v0.4.1
+#%tgftp%v$VERSION
 #  source;target;gsiftp-params;connection-test;timeout;log-filename;log-comment;pre-command;post-command;execs
 #  GridFTP tests on GridFTP example sites
 #  GridFTP from Domain1 to Domain2
@@ -751,7 +751,7 @@ get_multiplier()
 
 create_fifo()
 {
-        local FIFO="$FIFO"
+        local FIFO="$1"
 
         mkfifo $FIFO &>/dev/null
 
@@ -760,7 +760,7 @@ create_fifo()
 
 rm_fifo()
 {
-        local FIFO="$FIFO"
+        local FIFO="$1"
         
         rm $FIFO &>/dev/null
 
@@ -885,7 +885,7 @@ createAutoTuningBatchJob()
 	local execs=$defaultAutoTuningExecs
 
 	cat <<-AutoTuningBatchJobHeader
-		#%tgftp%v0.4.1
+		#%tgftp%v$VERSION
 		#%tgftp_autotuning_batchfile
 		#  source;target;gsiftp-params;connection-test;timeout;log-filename;log-comment;pre-command;post-command;execs
 	AutoTuningBatchJobHeader
@@ -1422,7 +1422,7 @@ while [[ "$1" != "" ]]; do
 		version_msg
 		exit 0
 
-    #  "--force-log-overwrite"
+	#  "--force-log-overwrite"
 	elif [[ "$1" == "--force-log-overwrite" ]]; then
 		if [[ "$FORCE_LOG_OVERWRITE_SET" != "0" ]]; then
                         shift 1
@@ -1669,7 +1669,7 @@ fi
 ################################################################################
 
 #  create FIFO
-create_fifo $FIFO
+create_fifo $FIFO || echo "FIFO $FIFO couldn't be created."; exit 1
 
 #  let tee listen to it
 #  TODO:
