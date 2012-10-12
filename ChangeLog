@@ -82,4 +82,13 @@ Corrected small error in the shabang of the auto-tuning batchjob header. Also
 added a clause that checks if the needed FIFO could be created. If not tgftp
 will exit immediately.
 
+2012-10-12  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.5:
+
+tgftp v0.4.5:
+The check for successful FIFO creation added in v0.4.5 contained an error, as
+the commands after the "||" keyword have to be enclosed in "(...)" (subshell) in
+order to work in the correct way. In v0.4.4 this lead to an unconditional exit.
+This is now fixed.
 

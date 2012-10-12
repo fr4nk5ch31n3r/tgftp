@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.4.4"
+VERSION="0.4.5"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -1669,7 +1669,7 @@ fi
 ################################################################################
 
 #  create FIFO
-create_fifo $FIFO || echo "FIFO $FIFO couldn't be created."; exit 1
+create_fifo $FIFO || ( echo "FIFO $FIFO couldn't be created."; exit 1 )
 
 #  let tee listen to it
 #  TODO:
