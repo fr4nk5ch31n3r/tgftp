@@ -2102,7 +2102,7 @@ elif [[ $_gucSIGINTed -eq 1 ]]; then
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
         echo -e "\nERROR: \"globus-url-copy\" was interrupted." 1>&2
 
-	if [[ $_sigintReceived -eq 1 ]]; then
+	if [[ $_sigintReceived -eq 0 ]]; then
 		#echo "($$) DEBUG: SIGINT received." 1>&2
 		
 		#  NOTICE:
@@ -2114,6 +2114,7 @@ elif [[ $_gucSIGINTed -eq 1 ]]; then
 		#  MARK X
 		kill -SIGINT $$		
 	fi
+	kill -SIGINT $$
 
 #  Did the transfer work?
 elif [[ "$GSIFTP_EXIT_VALUE" != "0" ]]; then
@@ -2131,7 +2132,10 @@ fi
 
 #  [5] calculate transfer rate in MB/s
 ################################################################################
-if [[ "$CONNECTION_TEST_SET" != "0" && "$GSIFTP_TRANSFER_LENGTH" != "" ]]; then
+if [[ "$CONNECTION_TEST_SET" != "0" && \
+      "$GSIFTP_TRANSFER_LENGTH" != "" && \
+      ! $_gucSIGINTed -eq 1 \
+]]; then
 
 	GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$GSIFTP_TRANSFER_LENGTH" )
 
@@ -2144,7 +2148,9 @@ if [[ "$CONNECTION_TEST_SET" != "0" && "$GSIFTP_TRANSFER_LENGTH" != "" ]]; then
 "</GSIFTP_TRANSFER_RATE>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 	
-elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" ]]; then
+elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" && \
+      ! $_gucSIGINTed -eq 1 \
+]]; then
 
 	#echo "($$) DEBUG: transfer length not given via commandline!" 1>&2
 
