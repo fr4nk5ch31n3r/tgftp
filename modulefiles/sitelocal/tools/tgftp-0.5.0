@@ -1,4 +1,4 @@
-# tgftp/0.4.1 local dependencies
+# tgftp/0.5.0 local dependencies
 
 set TGFTP_DIRECTORY_OF_EXECUTABLES "/path/to/tgftp/bin"
 set TGFTP_DIRECTORY_OF_MANUALS     "/path/to/tgftp/share/man"

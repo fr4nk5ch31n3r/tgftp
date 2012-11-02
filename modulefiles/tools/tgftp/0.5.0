@@ -1,8 +1,8 @@
 #%Module
 
-# tgftp/0.4.1 modulefile
+# tgftp/0.5.0 modulefile
 
-set ModulefileVersion "0.2"
+set ModulefileVersion "0.3"
 
 set VERSION [file tail [module-info name]]
 
@@ -42,7 +42,7 @@ if { [module-info mode] != "whatis" } {
 }
 
 
-# Help procedure: called by "module help tgftp/0.4.1"
+# Help procedure: called by "module help tgftp/0.5.0"
 proc ModulesHelp {} {
    global env ModulefileVersion
 
