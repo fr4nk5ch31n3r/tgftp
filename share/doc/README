@@ -1,61 +1,57 @@
-tgftp - The GridFTP benchmark, test and transfer script
-========================================================
+# Tgftp - The GridFTP benchmark, test and transfer script #
 
-Contents:
+## Contents ##
 
-1.	Synopsis
-2.	Features
-	2.1	Logfiles
-	2.2	Batchmode testing
-	2.3	Pre/post commands
-	2.4	Auto-tuning
-	2.5	Connection test
-3.	tgftp usage examples
+1. Synopsis
+2. Features  
+    2.1 Logfiles  
+    2.2 Batchmode testing  
+    2.3 Pre/post commands  
+    2.4 Auto-tuning  
+    2.5 Connection test
+3. tgftp usage examples
 
-################################################################################
+***
 
-(1) Synopsis:
---------------
+## (1) Synopsis ##
 
-The "tgftp" tool is a wrapper script for "globus-url-copy" (guc) to ease testing
+The _tgftp_ tool is a wrapper script for _globus-url-copy_ (guc) to ease testing
 and documentation of GridFTP performance for specific connections. The generated
 guc command, its output and the reached performance are logged to a file named
 like the following:
 
-"yyyymmdd_H:Mh_$$_testgftp.sh.log"
+```
+yyyymmdd_H:Mh_$$_testgftp.sh.log
+```
 
-$$ expands to the PID of the tgftp command.
+`$$` expands to the PID of the tgftp command.
 
 Additionally the output of the guc command is put to screen.
 
-NOTICE:
-
-The performance (transfer rate) is printed out to screen. Because this tool
-includes the time needed for establishing the connection (total time needed for
-the transfer), the transfer rates may vary from the rates that the guc command
-prints out - especially for short transfers. Additionally this tool can only
-calculate the transfer rate if a "-len|-partial-length <LENGTH>" guc param is
-present. tgftp takes the length, converts it to MByte and divides this by the
-time the generated guc command takes to complete. tgftp uses integer devision,
-hence the result may be inaccurate by +/- 1 MByte. But this precision should be
-enough for 1 GBit/s or 10 GBit/s networks.
+> **NOTICE:** The performance (transfer rate) is printed out to screen. Because
+this tool includes the time needed for establishing the connection (total time
+needed for the transfer), the transfer rates may vary from the rates that the
+guc command prints out - especially for short transfers. Tgftp either uses the
+given length/size of the transfer or determines it itself, converts it to MByte
+and divides this by the time the generated guc command takes to complete. tgftp
+uses integer devision, hence the result may be inaccurate by +/- 1 MByte. But
+this precision should be enough for 1 GBit/s or 10 GBit/s networks.
 
 Detailed help is provided by the help output and the manpage of the script.
 
-################################################################################
+***
 
-(2) Features:
---------------
+## (2) Features ##
 
-(2.1) Logfiles:
-****************
+### (2.1) Logfiles ###
 
-tgftp logs the following attributes of a test:
+Tgftp logs the following attributes of a test:
 
 * the created guc command
 * the output of the guc command
 * the start/end timestamp for a test
-* the transfer rate for a test
+* the transfer rate for a test (if successful)
+* the error message (if not successful)
 
 Additionally a comment can be inserted for each test. The logfiles basically
 look like XML files, as they use XML like tags that enclose the attribute
@@ -63,99 +59,86 @@ values. An example logfile output is shown below in (3).
 
 The tgftp distribution also includes a small helper script that can extract
 attribute values from tgftp logfiles for later evaluation and can be used for
-automatic evaluations. It's called "tgftp_log" and detailed help is provided by
+automatic evaluations. It's called _tgftp_log_ and detailed help is provided by
 the help output of the script and its manpage.
 
-(2.2) Batchmode testing:
-*************************
+### (2.2) Batchmode testing ###
 
-tgftp supports batch mode testing, meaning predefined test cases are tested one
+Tgftp supports batch mode testing, meaning predefined test cases are tested one
 after another. A batchfile is a table containing multiple lines with tgftp
 parameters. The first line has to contain a shebang of the following form:
 
+```
 #%tgftp%v<VERSION_NUMBER>
+```
 
-<VERSION_NUMBER> is the three digits (separated by two '.') number tgftp will
-print out if called with "--version". This shebang has to match the version of
+`<VERSION_NUMBER>` is the three digits (separated by two `.`s) number tgftp will
+print out if called with `--version`. This shebang has to match the version of
 tgftp that is used.
 
-Each non empty line not starting with a "#" is evaluated as follows, from left
-to right (each field separated by a ';'):
+Each non empty line not starting with a `#` is evaluated as follows, from left
+to right (each field separated by a `;`):
 
-source:             Enter a valid source address for GridFTP.
+`source`            Enter a valid source address for GridFTP.
 
-target:             Enter a valid target address for GridFTP.
+`target`            Enter a valid target address for GridFTP.
 
-gsiftp-params:      Determine the guc parameters to be used	for the test.
+`gsiftp-params`     Determine the guc parameters to be used for the test.
 
-connection-test:    Enter "yes" to activate and "no" to deactivate. This
-                    overwrites all other parameters (except "source" and
-                    "target" with the default values for a connection
-                    test).
+`connection-test`   Enter "yes" to activate and "no" to deactivate. This overwrites all other parameters (except `source` and `target` with the default values for a connection test).
 
-timeout:            Enter the time in seconds after tgftp kills the guc command.
+`timeout`           Enter the time in seconds after tgftp kills the guc command.
 
-log-filename:       Enter the filename for the logfile.
+`log-filename`      Enter the filename for the logfile.
 
-log-comment:        Enter a comment for the logfile. This can also be a
-                    command like "cat PRE_COMMAND_OUTPUT.txt", which enables
-                    to include output of the pre-command in the logfile (for
-                    example network params of the target system or
-                    traceroute output, etc.). As the string is evaluated by
-                    the shell, textt only comments - meaning no command
-                    should be called, have to be preceded by "#"!
+`log-comment`       Enter a comment for the logfile. This can also be a command like `cat PRE_COMMAND_OUTPUT.txt`, which enables to include output of the `pre-command` in the logfile (for example network params of the target system or `traceroute` output, etc.). As the string is evaluated by the shell, text only comments - meaning no command should be called, have to be preceded by `#`!
 
-pre-command:        Enter the filename of the command to be executed before
-                    the test (command must be executable and path must be
-                    included).	
+`pre-command`       Enter the filename of the command to be executed before the test (command must be executable and path must be included).	
 
-post-command:       Enter the filename of the command to be executed after
-                    the test (command must be executable and path must be
-                    included).
+`post-command`      Enter the filename of the command to be executed after the test (command must be executable and path must be included).
 
-execs:              Determine how often the test should be executed.
+`execs`             Determine how often the test should be executed.
 
 
-Example:
-
-"
-#%tgftp%v0.4.1
+**EXAMPLE:**
+```
+#%tgftp%v0.5.0
 #  source;target;gsiftp-params;connection-test;timeout;log-filename;log-comment;pre-command;post-command;execs
 #  GridFTP tests on GridFTP sites
 #  GridFTP from Site-a to Site-b
 gsiftp://gridftp-host.site-a/dev/zero;gsiftp://gridftp-host.site-b/dev/null;-vb -p 16 -tcp-bs 4M -len 4G;no;30;;"# Using the internet for the transfer: Site-a to Site-b";;;
 [...]
-"
+```
 
-Lines started with "#" are evaluated as comments, hence this could be used for
+Lines started with `#` are evaluated as comments, hence this can be used for
 infile documentation.
 
-For detailed help on tgftp's batchmode use the "--help-batchfile" parameter. An
+For detailed help on tgftp's batchmode use the `--help-batchfile` parameter. An
 exemplary batchfile is shipped with the tgftp distribution. When used in
-conjunction with "--batchfile" tgftp will parse each line and initiate one test
+conjunction with `--batchfile` tgftp will parse each line and initiate one test
 per line by default. Each test gets its own logfile named like the following:
 
+```
 <BATCHFILE_NAME>_#<TEST>_<EXEC>.log
+```
 
-With <TEST> being the number of the test and <EXEC> being the number of the
-execution run. If the field "execs" is set to a value greater than 1, a test is
+With `<TEST>` being the number of the test and `<EXEC>` being the number of the
+execution run. If the field `execs` is set to a value greater than `1`, a test is
 executed multiple times.
 
-(2.3) Pre/post commands:
-*************************
+### (2.3) Pre/post commands ###
 
-With the "--pre-command"/"--post-command" parameters one can provide a command
+With the `--pre-command/--post-command` parameters one can provide a command
 or multiple commands in a script that will be executed before/after a test. In
-combination with the "--log-comment" parameter it's possible to include test
+combination with the `--log-comment` parameter it's possible to include test
 specific information in a logfile. For example network parameters, host names
-etc.. This is done by specifying a command as log-comment that for example cats
-a file created by a pre command. The mentioned script/command after the
-"--pre-command"/"--post-command" parameters has to be executable and also has to
-include the full path to the script/command - if not in $PATH. tgftp's help
+etc.. This is done by specifying a command as `log-comment` that for example cats
+a file created by a `pre-command`. The mentioned script/command after the
+`--pre-command/--post-command` parameters has to be executable and also has to
+include the full path to the script/command - if not in `$PATH`. tgftp's help
 output provides details about the usage of these parameters.
 
-(2.4) Auto-tuning:
-*******************
+### (2.4) Auto-tuning ###
 
 Based on the batchmode functionality tgftp provides a function to automatically
 test a specific connection and determine the best performing guc parameter
@@ -165,9 +148,7 @@ finished, print out the best performing parameter configuration. During each
 test 4 GByte of binary zeroes are moved from the source's memory to the target's
 memory.
 
-NOTICE:
-
-Due to the boundary conditions, like workload on GridFTP machines, network
+> **NOTICE:** Due to the boundary conditions, like workload on GridFTP machines, network
 utilization and especially solar flares, repeated auto tuning tests might yield
 different parameter configurations. This is also because an auto tuning test 
 lasts very long (depending on the performance up to ~3 hours!) and one cannot
@@ -180,50 +161,46 @@ independent of each other, meaning the differing parameter has only a small
 effect on performance. Hence the resulting best performing parameter
 configuration might vary between these dependent configurations. In addition
 this function only tests memory to memory transfers, file to file transfers can
-look different but should basically benefit from the same guc parameters.
-
+look different but should basically benefit from the same guc parameters. 
 The recommendation is to make some educated guesses and test these manually in
 batch mode. Depending on the experience of the tester this could yield similar
 performance but require less time.
 
-(2.5) Connection test:
-***********************
+### (2.5) Connection test ###
 
-tgftp can also initiate so-called connection tests. During these tests only one
+tgftp can also initiate so-called _connection_ _tests_. During these tests only one
 byte is transferred from source to target and all debug output for guc is
 enabled. This feature comes in handy in case of firewall and port range related
 problems with GridFTP transfers.
 
-################################################################################
+***
 
-(3) tgftp usage examples:
-------------------------------
+## (3) tgftp usage examples ##
 
 Help and usage output is provided by issuing:
 
-"
+```shell
 $ tgftp [--help]
-"
+```
 
-Example(s):
-************
+**EXAMPLE(S):**
 
 #1
 This example is a memory to memory (mem2mem) test on a local machine that will
 transfer 4 GBytes of zeroes from memory to memory via a local GridFTP service
 listening on port 2812.
 
-"
+```shell
 $ tgftp -s file:///dev/zero -t gsiftp://localhost:2812/dev/null -- -len 4G
 
 87 MB/s
 
 Please see "20110112_08:42h_10051_testgftp.sh.log" for details.
-"
+```
 
 The created logfile looks like the following:
 
-"
+```xml
 <GSIFTP_TRANSFER_LOG_COMMENT>
 
 </GSIFTP_TRANSFER_LOG_COMMENT>
@@ -242,22 +219,22 @@ globus-url-copy -len 4G file:///dev/zero gsiftp://localhost:2812/dev/null
 <GSIFTP_TRANSFER_RATE>
 87 MB/s
 </GSIFTP_TRANSFER_RATE>
-"
+```
 
-"GSIFTP_TRANSFER_COMMAND_OUTPUT" is empty, as no "-vb" parameter was specified
+`GSIFTP_TRANSFER_COMMAND_OUTPUT` is empty, as no `-vb` parameter was specified
 and guc then only prints out errors. The same goes for
-"GSIFTP_TRANSFER_LOG_COMMENT" as there was no comment specified for the logfile
-with "--log-comment". To later retrieve the transfer rate from a tgftp logfile,
+`GSIFTP_TRANSFER_LOG_COMMENT` as there was no comment specified for the logfile
+with `--log-comment`. To later retrieve the transfer rate from a tgftp logfile,
 one can use the tgftp_log tool as follows:
 
-"
+```shell
 $ tgftp_log --get-attribute GSIFTP_TRANSFER_RATE --file 20110112_08:42h_10051_testgftp.sh.log
 
 87 MB/s
-"
+```
 
 tgftp_log can extract data from each valid attribute. To extract the contents of
-a specific attribute use the corresponding tag (without "<", ">" or "/"). The
+a specific attribute use the corresponding tag (without `<`, `>` or `/`). The
 possible attributes are listed in the help output of tgftp_log.
 
 
@@ -266,7 +243,7 @@ This example will determine the congestion protocol that is used locally (on a
 Linux system!) before starting the test and include the output of the
 pre-command in the comment of the logfile.
 
-"
+```shell
 $ tgftp \
 -s file:///dev/zero \
 -t gsiftp://gridftp-host.domain:2811/dev/null \
@@ -274,11 +251,11 @@ $ tgftp \
 --pre-command 'sysctl -n net.ipv4.tcp_congestion_control > PRE_COMMAND_OUTPUT.txt' \
 -- \
 -len 1M
-"
+```
 
 The created logfile looks like the following:
 
-"
+```xml
 <GSIFTP_TRANSFER_LOG_COMMENT>
 cubic
 </GSIFTP_TRANSFER_LOG_COMMENT>
@@ -297,9 +274,9 @@ globus-url-copy -len 1M file:///dev/zero gsiftp://gridftp-host.domain:2811/dev/n
 <GSIFTP_TRANSFER_RATE>
 0 MB/s
 </GSIFTP_TRANSFER_RATE>
-"
+```
 
-This example shows, how so-called "pre commands" can be used to create specific
+This example shows, how so-called _pre-commands_ can be used to create specific
 comments for the logfiles (this comes especially handy when used in tgftp's
 batchmode). The example's logfile also shows that the transfer of small amounts
 of data leads to unexact values for the transfer rate. In this example run the
@@ -308,11 +285,11 @@ transfer rate could have been more than 0 MB/s and less than 1 MB/s.
 
 #3
 This example will initiate multiple tests (one after another) with the parameter
-values included in "tgftp_tests.csv".
+values included in `tgftp_tests.csv`.
 
-"
+```shell
 $ tgftp -f tgftp_tests.csv
-"
+```
 
 Please follow (2.2) for details about batchmode and batchfiles.
 
