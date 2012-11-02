@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.4.5"
+VERSION="0.5.0"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -37,6 +37,30 @@ SUPPORTED_BATCHFILE_VERSIONS="$VERSION"
 
 EXIT_VAL="0"
 
+_sigintReceived=0
+
+################################################################################
+#  EXIT CODES
+################################################################################
+
+#  following "/usr/include/sysexits.h"
+#  EX_OK
+readonly _tgftp_exit_ok=0
+
+#  EX_USAGE
+#  e.g. wrong usage of program (wrong number of arguments, wrong flags, etc)
+readonly _tgftp_exit_usage=64
+
+#  EX_SOFTWARE
+#  internal software error not related to OS
+readonly _tgftp_exit_software=70
+
+#  Own exit codes
+
+#  guc timed out and was killed
+readonly _tgftp_exit_timeout=79
+
+################################################################################
 
 #  use special path on AIX (this path contains the GNU versions of the binaries
 #+ used by tgftp)
@@ -762,7 +786,7 @@ rm_fifo()
 {
         local FIFO="$1"
         
-        rm $FIFO &>/dev/null
+        rm -f $FIFO &>/dev/null
 
         return
 }
@@ -932,8 +956,8 @@ process_batchfile()
         local FILE_VERSION=$($GREP_BIN "#%tgftp" <$FILE | $SED_BIN -e 's/^#%tgftp%v//')
 
         if ! echo "$SUPPORTED_BATCHFILE_VERSIONS" | $GREP_BIN "$FILE_VERSION" &>/dev/null; then
-                echo "ERROR: $(basename $0) batch file version \"v$FILE_VERSION\" not supported!"
-                exit 1
+                echo "ERROR: $(basename $0) batch file version \"v$FILE_VERSION\" not supported!" 1>&2
+                exit "$_tgftp_exit_usage"
         fi
 	
 	#autotuning#############################################################
@@ -949,10 +973,7 @@ process_batchfile()
 	if [[ "$( $GREP_BIN -o "#%tgftp_autotuning_batchfile" <$FILE )" == "#%tgftp_autotuning_batchfile" ]]; then
 		#  enable autotuning
 		autoTuning=0
-		#echo $autoTuning
 	fi
-
-	#echo "DEBUG: Sourced \"batchfile_v0.2.8.shlib\"!"
 
 	#  variables
         local TGFTP_COMMAND="./$( mktemp .TGFTP_COMMAND_XXXXXX )"
@@ -1047,7 +1068,7 @@ process_batchfile()
 		#+ only 9 fields.
 		elif [[ `echo "${#CSV_LINE[@]}"` -lt "9" ]]; then
 			echo "Fields: ${#CSV_LINE[@]}"
-			echo "WARNING: Line $LINE_NUMBER: Less than 10 fields! Skipping line!"
+			echo "WARNING: Line $LINE_NUMBER: Less than 10 fields! Skipping line!" 1>&2
 			LINE_NUMBER=$(( $LINE_NUMBER + 1 ))
 		        continue
 		fi
@@ -1085,7 +1106,7 @@ process_batchfile()
 		        GSIFTP_SOURCE_URL="${CSV_LINE[0]}"
 		else
 		        #  if empty, print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"source\" field is empty! Skipping line!"
+		        echo "WARNING: Line $LINE_NUMBER: \"source\" field is empty! Skipping line!" 1>&2
 			continue
 		fi
 		
@@ -1094,7 +1115,7 @@ process_batchfile()
 		        GSIFTP_TARGET_URL="${CSV_LINE[1]}"
 		else
 		        #  if empty, print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"target\" field is empty! Skipping line!"
+		        echo "WARNING: Line $LINE_NUMBER: \"target\" field is empty! Skipping line!" 1>&2
 			continue
 		fi
 		
@@ -1111,7 +1132,7 @@ process_batchfile()
 		        :
 		else
 		        #  print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"connection-test\" field is empty! Skipping line!"
+		        echo "WARNING: Line $LINE_NUMBER: \"connection-test\" field is empty! Skipping line!" 1>&2
 		        continue
 		fi
 		
@@ -1210,7 +1231,6 @@ process_batchfile()
 
 				#autotuning#####################################
 				if [[ $autoTuning -eq 0 ]]; then
-					#echo "blip!"
 					#  save the performance value
 					tgftp_log \
                                          -a GSIFTP_TRANSFER_RATE \
@@ -1221,7 +1241,6 @@ process_batchfile()
 
 				rm -f "$TGFTP_COMMAND"
 			else
-				#echo "boing!"
 				if [[ ! $autoTuning -eq 0 ]]; then
 					echo " Test #${DATA_LINE_NUMBER}_${EXEC_COUNTER} failed!"
 				fi
@@ -1314,17 +1333,201 @@ process_batchfile()
 	fi
 	#autotuning#############################################################
 
-	#echo "DEBUG: FILE_VERSION=\"$FILE_VERSION\""
+        return
+}
+
+################################################################################
+#  from gtransfer v0.0.7d-dev07
+################################################################################
+getProtocolSpecifier()
+{
+	#  determine the protocol specifier for a URL
+	#
+	#  usage:
+	#+ getProtocolSpecifier url
+
+	local url="$1"
+
+	local protocolSpecifier=""
+
+	#  if the URL starts with an absolute path it's equal to "file://$URL"
+	if  [[ ${url:0:1} == "/" ]]; then
+		echo "file://"
+		return 0
+	#  return the protocol specifier
+	else
+		protocolSpecifier=$( echo $url | grep -o ".*://" )
+		echo "$protocolSpecifier"
+		return 0
+	fi
+}
+
+
+isValidUrl()
+{
+	#  determines if a valid URL was used
+	#
+	#  usage:
+	#+ isValidUrl url
+
+	local url="$1"
+
+	#  if the URL starts with an absolute path it's equal to "file://$URL"
+	#+ and therefore valid.
+	if  [[ ${url:0:1} == "/" ]]; then
+		return 0
+	#  protocol specifier missing?
+	elif ! echo $url | grep ".*://" &>/dev/null; then
+		#echo "ERROR: Protocol specifier missing in \"$URL\" and no local path specified!"
+		return 1
+	fi
+
+}
+
+
+listTransfer/createTransferList() {
+	#  create transfer list from source and destination URLs
+	#
+	#  usage:
+	#+ listTransfer/createTransferList gsiftpSourceUrl gsiftpDestinationUrl
+	#
+	#  prints the transfer list filename to stdout
+	#
+	#  returns:
+	#+ 0 if everything is allright
+	#+ 1 otherwise
+
+	local _source="$1"
+	local _destination="$2"
+
+	#  Check if valid URLs are provided
+	if ! isValidUrl $_source; then
+		echo "ERROR: Protocol specifier missing in \"$_source\" and no local path specified!"
+		return 1
+	elif ! isValidUrl $_destination; then
+		echo "ERROR: Protocol specifier missing in \"$_destination\" and no local path specified!"
+		return 1
+	#  check if target URL is a "http://" URL
+	elif [[ "$( getProtocolSpecifier $_destination )" == "http://" || \
+		"$( getProtocolSpecifier $_destination )" == "https://" \
+	]]; then
+		echo "ERROR: Target URL cannot be a \"http[s]://\" URL!"
+		return 1
+	fi
 	
-	#  check if the matching shlib is present
-	#if [[ -e $( dirname $( which $(basename $0) ) )/batchfile_v${FILE_VERSION}.shlib ]]; then
-	#	. $( dirname $( which $(basename $0) ) )/batchfile_v${FILE_VERSION}.shlib
-	#else
-	#	echo "ERROR: Shlib for $(basename $0) batch file version \"v$FILE_VERSION\" not found!"
-	#fi
+	#  to get the transfer list we use guc with "-do" option
+	globus-url-copy -do "$$_transferList" "$_source" "$_destination"
+
+	if [[ "$?" == "0" && -e "$$_transferList" ]]; then
+		echo "$$_transferList"
+		return 0
+	else
+		return 1
+	fi
+}
+
+
+listTransfer/getTransferSizeFromTransferList() {
+	#  gets the complete size of all data transferred with the provided
+	#+ transfer list
+	#
+	#  usage:
+	#+ listTransfer/getTransferSizeFromTransferList transferList
+	
+	local _transferList="$1"
+
+	#  format of transfer list (guc v8.2):
+	#													offset
+	#  source					     destination					|    size, modify timestamp and permissions
+	#  |						  |						  |    |
+	#  "ftp://vserver1.asc:2811/~/files/test4/file.00355" "ftp://vserver2.asc:2811/~/files/test4/file.00355" 0,-1 size=0;modify=1328981550;mode=0644;
+
+	#  get all file sizes of the transfer list, one each line
+	local _fileSizes=$( cut -d ' ' -f 4 "$_transferList" | cut -d ';' -f 1 | cut -d '=' -f 2 )
+
+	#  now sum up all file sizes
+	for _size in $( echo $_fileSizes ); do
+		_sum=$(( $_sum + $_size ))
+		if [[ "$?" != "0" ]]; then
+			break
+		fi
+	done
+
+	if [[ "$?" == "0" ]]; then
+		echo "$_sum"
+		return 0
+	else
+		return 1
+	fi
+}
+
+
+################################################################################
+
+################################################################################
+#  NEW FUNCTIONS
+################################################################################
+tgftp/getMultiplier()
+{
+        local _unit="$1"
+        
+        local _multiplier="1"
+
+        #  set multiplier to get MB/s
+        if [[ "$_unit" == "GB" ]]; then
+                _multiplier="1024"
+        elif [[ "$_unit" == "MB" ]]; then
+                _multiplier="1"
+        #  PLEASE NOTICE:
+        #+ When the unit is detected as "KB" or "B", then the multiplier result
+        #+ is actually a divisior and has to be used that way. This is because
+        #+ bash can only do integer division and hence 1 divided by a number
+        #+ greater than 1 is 0, which would make any further calculations with
+        #+ this multiplier result wrong.
+        elif [[ "$_unit" == "KB" ]]; then
+                _multiplier="1024"
+        elif [[ "$_unit" == "B" ]]; then
+                _multiplier="$(( 1024 * 1024 ))"
+        fi
+
+        echo "$_multiplier"
 
         return
 }
+
+
+tgftp/calcTransferRate()
+{
+	local _transferStartDate="$1" # in seconds since epoch
+	local _transferEndDate="$2"   # in seconds since epoch
+	local _size="$3"              # can be x, xK, xM, xG
+	
+	#  prevent situations where the divisor could be "0".
+	local _divisor=$(( $_transferEndDate - $_transferStartDate ))
+	if [[ $_divisor -eq 0 ]]; then
+		_divisor=1
+	fi
+	
+	local _unit=$( get_unit $_size )
+	
+	local _multiplier=$( tgftp/getMultiplier "$_unit")
+
+	#  Take into account, that the mulitplier is actually a divisor when
+	#+ the size unit is detected as "KB" or "B".
+	if [[ "$_unit" == "KB" || "$_unit" == "B" ]]; then
+		_divisor=$(( $_divisor * $_multiplier ))
+		_multiplier=1
+	fi	
+	
+	local _transferRate=$(( $(( $( echo "$_size" | $SED_BIN -e 's/[KMG]$//' ) * $_multiplier )) / $_divisor ))
+	
+	echo "$_transferRate"
+	
+	return
+}
+
+
+################################################################################
 
 kill_after_timeout()
 {
@@ -1339,17 +1542,23 @@ kill_after_timeout()
 
         $SLEEP_BIN "$TIMEOUT"
 
-        if ps -p "$KPID" &>/dev/null ; then
+	#  process still running?
+        if kill -0 "$KPID" &>/dev/null ; then
                 kill "$KPID" &>/dev/null
+                _programReturnVal="$?"
 
-                #  indicate that the pid was killed
-                touch "${GSIFTP_TRANSFER_COMMAND}_KILLED"
-                RETURN_VAL="0"
+		if [[ $_programReturnVal -eq 0 ]]; then
+	                #  indicate that the pid was killed
+	                touch "${GSIFTP_TRANSFER_COMMAND}_KILLED"
+	                RETURN_VAL="0"
+	        else
+	        	RETURN_VAL=$_programReturnVal
+		fi
         else
                 RETURN_VAL="1"
         fi
 
-        return
+        return $RETURN_VAL
 }
 
 #  remove indicator
@@ -1361,11 +1570,11 @@ fi
 commandLine="$0 $@"
 
 #  correct number of params?
-if [[ "$#" -lt "1" || "$#" == "3" ]]; then
-   # no, so output a usage message
-   usage_msg
-   exit 1
-fi
+#if [[ "$#" -lt "1" || "$#" == "3" ]]; then
+#   # no, so output a usage message
+#   usage_msg
+#   exit 1
+#fi
 
 # read in all parameters
 while [[ "$1" != "" ]]; do
@@ -1394,7 +1603,7 @@ while [[ "$1" != "" ]]; do
 	]]; then
 		#  no, so output a usage message
 		usage_msg
-		exit 1   
+		exit "$_tgftp_exit_usage"   
 	fi
 
 	#  "--"
@@ -1403,6 +1612,7 @@ while [[ "$1" != "" ]]; do
 		shift 1
 		#  params forwarded to "globus-url-copy"
 		GSIFTP_PARAMS="$@"
+		
 		#  exit the loop (this assumes that everything left in "$@" is
 		#+ a "globus-url-copy" param).		
 		break
@@ -1430,7 +1640,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--force-log-overwrite\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--source|-s <GSIFTP_SOURCE_URL>"
@@ -1443,7 +1653,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--source|-s\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--target|-t <GSIFTP_TARGET_URL>"
@@ -1456,7 +1666,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--target|-t\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--connection-test|-c"
@@ -1467,7 +1677,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--connection-test|-c\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--auto-tune|-a"
@@ -1478,7 +1688,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--auto-tune|-a\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--timeout|-k"
@@ -1491,7 +1701,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--timeout|-k\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--batchfile|-f <GSIFTP_BATCHFILE>"
@@ -1504,7 +1714,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--batchfile|-f\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--log-filename "<GSIFTP_TRANSFER_LOG_FILENAME>""
@@ -1517,7 +1727,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--log-filename\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--log-comment "<GSIFTP_TRANSFER_LOG_COMMENT>""
@@ -1530,7 +1740,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--log-comment\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--pre-command "<GSIFTP_TRANSFER_PRE_COMMAND>""
@@ -1543,7 +1753,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--pre-command\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	#  "--post-command "<GSIFTP_TRANSFER_POST_COMMAND>""
@@ -1556,7 +1766,7 @@ while [[ "$1" != "" ]]; do
 		else
 			#  duplicate usage of this parameter
 			echo "ERROR: The parameter \"--post-command\" cannot be used multiple times!"
-			exit 1
+			exit "$_tgftp_exit_usage"
 		fi
 
 	fi
@@ -1571,8 +1781,8 @@ if [[ "$GSIFTP_BATCHFILE_SET" == "0" ]]; then
                 process_batchfile "$GSIFTP_BATCHFILE"
                 exit "$?"
         else
-                echo "ERROR: batchfile \"$GSIFTP_BATCHFILE\" not existing!"
-                exit 1
+                echo "ERROR: batchfile \"$GSIFTP_BATCHFILE\" not existing!" 1>&2
+                exit "$_tgftp_exit_usage"
         fi
 
 elif [[ "$GSIFTP_SOURCE_URL" == "" || \
@@ -1585,7 +1795,7 @@ elif [[ "$GSIFTP_SOURCE_URL" == "" || \
     else
         #  no, so output a usage message
         usage_msg
-        exit 1
+        exit "$_tgftp_exit_usage"
     fi
 
 #  Auto tuning needed?
@@ -1605,8 +1815,8 @@ if [[ "$GSIFTP_TRANSFER_LOG_FILENAME" != "" && -e "$GSIFTP_TRANSFER_LOG_FILENAME
         if [[ "$FORCE_LOG_OVERWRITE_SET" == "0" ]]; then
             : # do nothing, just continue
         else
-            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!"
-            exit 1
+            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
+            exit "$_tgftp_exit_usage"
         fi
 fi
 
@@ -1628,33 +1838,35 @@ if [[ "$CONNECTION_TEST_SET" == "0" ]]; then
 
 	#  ignore any additional non default "globus-url-copy" params
 	GSIFTP_PARAMS=""
-fi
-################################################################################
-#  default params will be overwritten by forwarded params
-################################################################################
-
-#  -len|-partial-length
-GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-len [[:alnum:]]*|\-partial-length [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
-if [[ "$GREP" != "" ]]; then
-	GSIFTP_TRANSFER_LENGTH="$GREP"
 else
-	#  use default values
-	GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TRANSFER_LENGTH_PARAM $GSIFTP_TRANSFER_LENGTH"
-fi
-#  -tcp-bs|-tcp-buffer-size
-GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-tcp-bs [[:alnum:]]*|\-tcp-buffer-size [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
-if [[ "$GREP" != "" ]]; then
-	GSIFTP_TCP_BLOCKSIZE="$GREP"
-else
-	#  use default values
-	GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TCP_BLOCKSIZE_PARAM $GSIFTP_TCP_BLOCKSIZE"
+	################################################################################
+	#  default params will be overwritten by forwarded params
+	################################################################################
+
+	#  -len|-partial-length
+	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-len [[:alnum:]]*|\-partial-length [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
+	if [[ "$GREP" != "" ]]; then
+		GSIFTP_TRANSFER_LENGTH="$GREP"
+	else		
+		#  use default values
+		GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TRANSFER_LENGTH_PARAM $GSIFTP_TRANSFER_LENGTH"
+	fi
+	#  -tcp-bs|-tcp-buffer-size
+	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-tcp-bs [[:alnum:]]*|\-tcp-buffer-size [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
+	if [[ "$GREP" != "" ]]; then
+		GSIFTP_TCP_BLOCKSIZE="$GREP"
+	else
+		#  use default values
+		GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TCP_BLOCKSIZE_PARAM $GSIFTP_TCP_BLOCKSIZE"
+	fi
 fi
 
 ################################################################################
-#  exit on Control-C
+#  traps
 ################################################################################
-trap 'rm_fifo $FIFO;rm -f "${GSIFTP_TRANSFER_COMMAND}_KILLED" "$GSIFTP_TRANSFER_COMMAND" "$$_testgftp.sh.log"; trap - SIGINT; /bin/kill -SIGINT $$' SIGINT
-#trap 'echo "SIGINT caught"; trap SIGINT; /bin/kill -SIGINT $$' SIGINT
+trap 'rm_fifo $FIFO; rm -f "${GSIFTP_TRANSFER_COMMAND}_KILLED" "$GSIFTP_TRANSFER_COMMAND" "$$_testgftp.sh.log"' EXIT
+#  trap SIGINT but wait until "#  MARK X" before killing yourself with SIGINT.
+trap '_sigintReceived=1; trap - SIGINT' SIGINT
 
 ################################################################################
 #  execute pre-command if needed
@@ -1669,7 +1881,10 @@ fi
 ################################################################################
 
 #  create FIFO
-create_fifo $FIFO || ( echo "FIFO $FIFO couldn't be created."; exit 1 )
+if ! create_fifo $FIFO; then
+	echo "ERROR: FIFO \"$FIFO\" couldn't be created." 1>&2
+	exit "$_tgftp_exit_software"
+fi
 
 #  let tee listen to it
 #  TODO:
@@ -1679,7 +1894,7 @@ tee $$_testgftp.sh.log < $FIFO &
 
 #  [1] get current time in seconds since epoch
 ################################################################################
-GSIFTP_START_DATE=$($DATE_BIN +%s)
+#GSIFTP_START_DATE=$($DATE_BIN +%s)
 
 
 #  [2] perform transfer
@@ -1692,28 +1907,73 @@ GSIFTP_START_DATE=$($DATE_BIN +%s)
 #                $GSIFTP_TRANSFER_LENGTH_PARAM $GSIFTP_TRANSFER_LENGTH \
 #                $GSIFTP_SOURCE_URL \
 #                $GSIFTP_TARGET_URL &> $FIFO &
-echo 	"globus-url-copy" \
+#
+echo 	"exec globus-url-copy" \
 	"$GSIFTP_DEFAULT_PARAMS" \
 	"$GSIFTP_PARAMS" \
 	"$GSIFTP_SOURCE_URL" \
 	"$GSIFTP_TARGET_URL" \
 	"&>$FIFO" > "$GSIFTP_TRANSFER_COMMAND"
 
+#  Just in case the file creation takes longer, we get the timestamp directly
+#+ prior to the execution of the guc command.
+GSIFTP_START_DATE=$($DATE_BIN +%s)
+
 bash "$GSIFTP_TRANSFER_COMMAND" &
-#cat .GSIFTP_TRANSFER_COMMAND
-#exit 0
+
+#globus-url-copy \
+#$GSIFTP_DEFAULT_PARAMS \
+#$GSIFTP_PARAMS \
+#"$GSIFTP_SOURCE_URL" \
+#"$GSIFTP_TARGET_URL" &>$FIFO &
 
 GSIFTP_TRANSFER_COMMAND_PID="$!"
 
 #  kill command after timeout
-kill_after_timeout "$GSIFTP_TRANSFER_COMMAND_PID" "$GSIFTP_TIMEOUT" &
+if [[ ! $GSIFTP_TIMEOUT -eq 0 ]]; then
+	kill_after_timeout "$GSIFTP_TRANSFER_COMMAND_PID" "$GSIFTP_TIMEOUT" &
+fi
 
 #  wait for pid and discard "lengthy" output
 wait "$GSIFTP_TRANSFER_COMMAND_PID" &>/dev/null
 
-#  save exit value
-GSIFTP_EXIT_VALUE="$?"
+#  NOTICE:
+#+ If tgftp is used interactively, when hitting "Ctrl+C" and tgftp is already
+#+ executing the above "wait", the "wait" is interrupted, will exit with 128 +
+#+ signal number and the trap is executed.
+#
+#  From <http://tldp.org/LDP/Bash-Beginners-Guide/html/sect_12_02.html>
+#+ "[...]
+#+ 12.2.2. How Bash interprets traps
+#+
+#+ When Bash receives a signal for which a trap has been set while waiting for a
+#+ command to complete, the trap will not be executed until the command
+#+ completes. When Bash is waiting for an asynchronous command via the wait
+#+ built-in, the reception of a signal for which a trap has been set will cause
+#+ the wait built-in to return immediately with an exit status greater than 128,
+#+ immediately after which the trap is executed.
+#+ [...]"
+#+
+#+ [1] states that "Ctrl+C" sends SIGINT "to all the processes of the foreground
+#+ process group", but during testing tgftp I recognized the following
+#+ behaviour:
+#+
+#+ When tgftp was interrupted by "Ctrl+C" also the background process (guc) was
+#+ interrupted. But if another process was used, that process continued to run
+#+ after tgftp exited. It is unclear why guc - being in the background -
+#+ receives a SIGINT. Although the current behaviour is desirable.
+#+ _____________
+#+ [1] <http://stackoverflow.com/a/8406413>
 
+#  save exit value
+#
+#  NOTICE:
+#+ When a user hits "Ctrl+C" during execution of tgftp at a point in time when
+#+ guc has already started and is not yet finished, the exit value stored will
+#+ be the exit value of the "wait" command above, which then will be 130 = 128 +
+#+ 2. If guc would exit immediately on SIGINT and the "wait" wouldn't be
+#+ interrupted, the effect would be the same, an exit value of 130 stored.
+GSIFTP_EXIT_VALUE="$?"
 
 #  [3] get current time in seconds since epoch
 ################################################################################
@@ -1726,7 +1986,6 @@ rm_fifo $FIFO
 #  [4] save command and log to one file
 ################################################################################
 
-
 #  filename set by user?
 if [[ "$GSIFTP_TRANSFER_LOG_FILENAME" == "" ]]; then
         GSIFTP_TRANSFER_LOG_FILENAME="$($DATE_BIN -d "1970-01-01 UTC + $GSIFTP_START_DATE seconds" +%Y%m%d_%H:%Mh)_$$_testgftp.sh.log"
@@ -1738,8 +1997,8 @@ if [[ -e "$GSIFTP_TRANSFER_LOG_FILENAME" ]]; then
             #  truncate file
             > "$GSIFTP_TRANSFER_LOG_FILENAME"
         else
-            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!"
-            exit 1
+            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
+            exit "$_tgftp_exit_usage"
         fi
 fi
 ################################################################################
@@ -1767,7 +2026,7 @@ fi
 #  save "globus-url-copy" command
 echo -en \
 "<GSIFTP_TRANSFER_COMMAND>\n"\
-$(cat "$GSIFTP_TRANSFER_COMMAND" | $SED_BIN -e 's/\ &>.*//')\
+$(cat "$GSIFTP_TRANSFER_COMMAND" | $SED_BIN -e 's/^exec //' -e 's/\ &>.*//')\
 "\n</GSIFTP_TRANSFER_COMMAND>\n"\
 >> "$GSIFTP_TRANSFER_LOG_FILENAME"
 
@@ -1776,20 +2035,21 @@ rm -f "$GSIFTP_TRANSFER_COMMAND"
 ################################################################################
 
 
-#  Currently guc (<= v8.2) does exit on SIGINT unconventionally, meaning it
-#+ catches a SIGINT, but after doing its internal cleanup and writing out a
-#+ possible dumpfile, it does not reset the SIGINT handler to the default SIGINT
-#+ handler and kills itself with SIGINT, but simply exits normally (leading to
-#+ "0" as exit value in the bash shell). "Correct" would be an exit value of
-#+ "130" (which is 128 + <SIGNAL>, with <SIGNAL> being SIGINT, which is "2").
+#  guc (<= v8.2) does exit on SIGINT unconventionally, meaning it catches a
+#+ SIGINT, but after doing its internal cleanup and writing out a possible
+#+ dumpfile, it does not reset the SIGINT handler to the default SIGINT handler
+#+ and kills itself with SIGINT, but simply exits normally (leading to "0" as
+#+ exit value in the bash shell). "Correct" would be an exit value of "130"
+#+ (which is 128 + <SIGNAL>, with <SIGNAL> being SIGINT, which is "2").
 #
 #  See <http://www.cons.org/cracauer/sigint.html> for an elaborate discussion.
 
-#  As the situation won't solve anytime soon, we will try to detect if guc was
-#+ SIGINTed by grepping for the string "^Cancelling copy...$", which is written
-#+ out by guc if it was interrupted.
+#  To also support these specific versions of guc we will try to detect if guc
+#+ was SIGINTed by grepping for the string "^Cancelling copy...$", which is
+#+ written out by guc if it was interrupted.
 _gucSIGINTed=0
-if grep '^Cancelling copy...$' < $$_testgftp.sh.log &>/dev/null; then
+if grep '^Cancelling copy...$' < $$_testgftp.sh.log &>/dev/null || \
+   [[ $GSIFTP_EXIT_VALUE -eq 130 ]]; then
         _gucSIGINTed=1
 fi
 
@@ -1822,8 +2082,7 @@ echo -en \
 >> "$GSIFTP_TRANSFER_LOG_FILENAME"
 ################################################################################
 
-
-#  did the globus-url-copy command time out and was killed?
+#  Did the globus-url-copy command time out and was killed?
 if [[ -e "${GSIFTP_TRANSFER_COMMAND}_KILLED" ]]; then
         rm - f "${GSIFTP_TRANSFER_COMMAND}_KILLED" &>/dev/null
         echo -en \
@@ -1831,19 +2090,41 @@ if [[ -e "${GSIFTP_TRANSFER_COMMAND}_KILLED" ]]; then
 "ERROR: \"globus-url-copy\" timed out."\
 "\n</GSIFTP_TRANSFER_ERROR>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
-        echo -e "\nERROR: \"globus-url-copy\" timed out. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
-        exit 1
+        echo -e "\nERROR: \"globus-url-copy\" timed out. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
+        exit "$_tgftp_exit_timeout"
 
-#  did the transfer work?
+#  Was guc interrupted?
+elif [[ $_gucSIGINTed -eq 1 ]]; then
+	echo -en \
+"<GSIFTP_TRANSFER_ERROR>\n"\
+"ERROR: \"globus-url-copy\" was interrupted.\n"\
+"</GSIFTP_TRANSFER_ERROR>\n"\
+	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+        echo -e "\nERROR: \"globus-url-copy\" was interrupted." 1>&2
+
+	if [[ $_sigintReceived -eq 1 ]]; then
+		#echo "($$) DEBUG: SIGINT received." 1>&2
+		
+		#  NOTICE:
+		#+ If using "/bin/kill" instead of the bash builtin "kill"
+		#+ below, the SIGINT sent after "#  MARK X" is ignored by tgftp.
+		#+ It continues execution then. With "kill", it works as
+		#+ intended.
+		
+		#  MARK X
+		kill -SIGINT $$		
+	fi
+
+#  Did the transfer work?
 elif [[ "$GSIFTP_EXIT_VALUE" != "0" ]]; then
         echo -en \
 "<GSIFTP_TRANSFER_ERROR>\n"\
 "ERROR: \"globus-url-copy\" failed."\
 "\n</GSIFTP_TRANSFER_ERROR>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
-        echo -e "\nERROR: \"globus-url-copy\" failed. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
-        exit 1
-
+        echo -e "\nERROR: \"globus-url-copy\" failed. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
+        exit 1        
+        
 fi
 ################################################################################
 
@@ -1851,43 +2132,58 @@ fi
 #  [5] calculate transfer rate in MB/s
 ################################################################################
 if [[ "$CONNECTION_TEST_SET" != "0" && "$GSIFTP_TRANSFER_LENGTH" != "" ]]; then
-	#  determine multiplier
-	MULTIPLIER=$( get_multiplier $(get_unit $GSIFTP_TRANSFER_LENGTH) )
 
-	#  prevent situations where the divisor could be "0".
-	DIVISOR=$(( $GSIFTP_END_DATE - $GSIFTP_START_DATE ))
-	if [[ $DIVISOR == 0 ]]; then
-		DIVISOR=1
-	fi
+	GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$GSIFTP_TRANSFER_LENGTH" )
 
-        #GSIFTP_TRANSFER_RATE=$(( $(( $(echo "$GSIFTP_TRANSFER_LENGTH" | $SED_BIN -e 's/.$//') * $MULTIPLIER )) / $(( $GSIFTP_END_DATE - $GSIFTP_START_DATE )) ))
-
-	GSIFTP_TRANSFER_RATE=$(( $(( $(echo "$GSIFTP_TRANSFER_LENGTH" | $SED_BIN -e 's/.$//') * $MULTIPLIER )) / $DIVISOR ))
-	
 	#  output transfer rate (including time needed for connection) to screen
         echo -e "\n$GSIFTP_TRANSFER_RATE MB/s"
-	#   and append it to the log
+	#  ...and append it to the log
         echo -en \
 "<GSIFTP_TRANSFER_RATE>\n"\
-"$GSIFTP_TRANSFER_RATE MB/s"\
-"\n</GSIFTP_TRANSFER_RATE>\n"\
+"$GSIFTP_TRANSFER_RATE MB/s\n"\
+"</GSIFTP_TRANSFER_RATE>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+	
 elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" ]]; then
-	#  no calculation possible
-	echo -e "\nWARNING: No performance calculation possible, because the transfer length was not specified!"
-	echo -en \
+
+	#echo "($$) DEBUG: transfer length not given via commandline!" 1>&2
+
+	#  guc understandably cannot get the transfer size when transferring
+	#+ from /dev/zero to /dev/null
+	if ! echo "$GSIFTP_SOURCE_URL" | grep '/dev/zero' &>/dev/null && \
+	   ! echo "$GSIFTP_TARGET_URL" | grep '/dev/null' &>/dev/null; then
+		
+		#  NOTICE:
+		#+ The time needed for transfer size/length auto-detection is quite
+		#+ short (about a second during tests). If you want to check this,
+		#+ please uncomment the following two TIMING echo commands.
+
+		#echo "TIMING: Before transfer length auto-detection: $( date )" 1>&2
+
+		#  calculate size from transfer list
+		#  create transfer list (the name will contain the current PID)
+		_transferList=$( listTransfer/createTransferList "$GSIFTP_SOURCE_URL" "$GSIFTP_TARGET_URL" )
+	
+		_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_transferList" )
+		rm -f "$_transferList"
+
+		#echo "TIMING: After transfer length auto-detection: $( date )" 1>&2
+	
+		GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$_transferSize" )
+
+		#  output transfer rate (including time needed for connection) to screen
+		echo -e "\n$GSIFTP_TRANSFER_RATE MB/s"
+		#   and append it to the log
+		echo -en \
 "<GSIFTP_TRANSFER_RATE>\n"\
-"WARNING: No performance calculation possible, because the transfer length was not specified!"\
-"\n</GSIFTP_TRANSFER_RATE>\n"\
-	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+"$GSIFTP_TRANSFER_RATE MB/s\n"\
+"</GSIFTP_TRANSFER_RATE>\n"\
+		>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+	fi
+	
 elif [[ "$CONNECTION_TEST_SET" == "0" ]]; then
-	#  connection test, no calculation needed
-	echo -e "\nINFO: Connection test => no performance calculation made!"
-	echo -en \
-"<GSIFTP_TRANSFER_RATE>\n"\
-"INFO: Connection test => no performance calculation made!"\
-"\n</GSIFTP_TRANSFER_RATE>\n"\
-	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+	#  connection test, no calculation done
+	echo -e "\nINFO: Connection test => no performance calculation done!"
 fi
 ################################################################################
 
@@ -1895,7 +2191,6 @@ fi
 ################################################################################
 #  execute post-command if needed
 ################################################################################
-
 
 #  post command is only executed if guc returned 0 and was *not* interrupted.
 if [[ "$GSIFTP_TRANSFER_POST_COMMAND" != "" && \
@@ -1906,8 +2201,6 @@ if [[ "$GSIFTP_TRANSFER_POST_COMMAND" != "" && \
 fi
 
 echo -e "\nPlease see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
-
-echo "$GSIFTP_EXIT_VALUE"
 
 exit "$GSIFTP_EXIT_VALUE"
 

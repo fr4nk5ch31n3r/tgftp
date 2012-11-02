@@ -87,8 +87,37 @@ will exit immediately.
 tgftp dist v0.4.5:
 
 tgftp v0.4.5:
-The check for successful FIFO creation added in v0.4.5 contained an error, as
+The check for successful FIFO creation added in v0.4.4 contained an error, as
 the commands after the "||" keyword have to be enclosed in "(...)" (subshell) in
 order to work in the correct way. In v0.4.4 this lead to an unconditional exit.
 This is now fixed.
+
+2012-11-02  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.5.0:
+
+tgftp v0.5.0:
+The subshell introduced in v0.4.5 needed to be replaced, because the internal
+exit command just exited the subshell but should exit the main program if
+triggered. This is now fixed.
+
+Also added specific exit codes to tgftp for interoperability with other tools.
+
+If transfer length was given in Bytes (no unit at the end of the number), the
+used length was used wrongly (=> devided by ten as the last digit was removed).
+This is now fixed.
+
+In addition to that, tgftp can now calculate the transfer rate also when the
+transfer size is not given (by using some internal functions of gtransfer). It
+uses guc to get a dump of the files to be transferred and sums up all file sizes
+to get the transfer size.
+
+Reworked man page for tgftp.
+
+Also fixed some internal inconsistencies:
+* Error and warning messages no go to STDERR.
+* When tgftp and/or guc is intrrupted, tgftp won't calculate a (then wrong)
+  transfer rate
+  
+Reorganized directory structure of "source" files.
 

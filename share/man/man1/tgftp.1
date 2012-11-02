@@ -1,6 +1,6 @@
-.TH TGFTP 1 "14 Oct 2012" "version 0.4.6" "User Commands"
+.TH TGFTP 1 "02 Nov 2012" "version 0.5.0" "User Commands"
 .SH NAME
-tgftp \- The GridFTP test script
+tgftp \- The GridFTP benchmark, test and transfer script
 
 .SH SYNOPSIS
 .B tgftp
@@ -233,6 +233,32 @@ parameter values included in "tgftp_tests.csv":
 .fi
 .LP
 
+.SH EXIT STATUS
+.TP 10
+.B 0
+If everything is OK.
+
+.TP
+.B 1
+Something went wrong.
+
+.TP
+.RI "From " "/usr/include/sysexits.h" ":"
+
+.TP
+.B 64
+Wrong usage of the program.
+
+.TP
+.B 70
+Internal software error not related to OS.
+
+.TP
+Own exit code(s):
+
+.TP
+.B 79
+guc timed out and was killed.
 
 .SH AUTHOR
 Frank Scheiner
