@@ -14,7 +14,7 @@ Corrected ChangeLog date of previous entry.
 
 2012-03-16  Frank Scheiner  <frank.scheiner@web.de>
 
-tgftp distribution v0.4.1b:
+tgftp dist v0.4.1b:
 Introduced own version number for tgftp distribution. The version number of
 the dist. is no longer determined by tgftp itself, as updates to other parts of
 the distribution would not justify a new version number for tgftp.
@@ -31,7 +31,7 @@ Also readded PDF versions of manual pages. Adapted INSTALL file.
 
 tgftp dist v0.4.2:
 
-tgftp v0.4.2:
+*0.4.2 (tgftp)
 Versioning of tgftp now tries to conform to the "Semantic Versioning 2.0.0-rc.1"
 specification (see [1] for details).
 
@@ -68,7 +68,7 @@ ____________
 
 tgftp dist v0.4.3:
 
-tgftp v0.4.3:
+*0.4.3 (tgftp)
 The SIGINT handler was not reset to the default handler due to a missing "-"
 between "trap" and "SIGINT" (hence v0.4.2 didn't behave "correctly" on SIGINT).
 This is now fixed.
@@ -77,7 +77,7 @@ This is now fixed.
 
 tgftp dist v0.4.4:
 
-tgftp v0.4.4:
+*0.4.4 (tgftp)
 Corrected small error in the shabang of the auto-tuning batchjob header. Also
 added a clause that checks if the needed FIFO could be created. If not tgftp
 will exit immediately.
@@ -86,7 +86,7 @@ will exit immediately.
 
 tgftp dist v0.4.5:
 
-tgftp v0.4.5:
+*0.4.5 (tgftp)
 The check for successful FIFO creation added in v0.4.4 contained an error, as
 the commands after the "||" keyword have to be enclosed in "(...)" (subshell) in
 order to work in the correct way. In v0.4.4 this lead to an unconditional exit.
@@ -96,7 +96,7 @@ This is now fixed.
 
 tgftp dist v0.5.0:
 
-tgftp v0.5.0:
+*0.5.0 (tgftp)
 The subshell introduced in v0.4.5 needed to be replaced, because the internal
 exit command just exited the subshell but should exit the main program if
 triggered. This is now fixed.
@@ -120,4 +120,12 @@ Also fixed some internal inconsistencies:
   transfer rate
   
 Reorganized directory structure of "source" files.
+
+2012-11-19  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.5.1:
+
+module files:
+Corrected wrong variable name in the include file containing the local site
+configuration.
 
