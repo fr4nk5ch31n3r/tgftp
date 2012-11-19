@@ -2,5 +2,5 @@
 
 # Default version for tgftp
 
-set ModulesVersion "0.5.0"
+set ModulesVersion "<VERSION>"
 

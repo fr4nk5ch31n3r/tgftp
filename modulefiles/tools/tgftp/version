@@ -1,8 +1,8 @@
 #%Module
 
-# tgftp/0.5.0 modulefile
+# tgftp/<VERSION> modulefile
 
-set ModulefileVersion "0.3"
+set ModulefileVersion "0.4"
 
 set VERSION [file tail [module-info name]]
 
@@ -38,11 +38,11 @@ prepend-path MANPATH $TGFTP_DIRECTORY_OF_MANUALS
 
 if { [module-info mode] != "whatis" } {
    puts stderr "[module-info mode] tgftp $VERSION (PATH, MANPATH)"
-   puts stderr "In addition to the manual pages (man {tgftp|tgftp_log}), there is also a longer README file available (less $TGFTP_DIRECTORY_OF_DOCS/README).
+   puts stderr "In addition to the manual pages (man {tgftp|tgftp_log}), there is also a longer README file available (less $TGFTP_DIRECTORY_OF_DOCS/README)."
 }
 
 
-# Help procedure: called by "module help tgftp/0.5.0"
+# Help procedure: called by "module help tgftp/<VERSION>"
 proc ModulesHelp {} {
    global env ModulefileVersion
 
