@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.5.0"
+VERSION="0.5.1"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -1415,10 +1415,19 @@ listTransfer/createTransferList() {
 		return 1
 	fi
 	
+	#  perform recursive transfer
+	if [[ $recursiveTransferSet -eq 0 ]]; then
+		local _recursive="-r"
+	else
+		local _recursive=""
+	fi
+
 	#  to get the transfer list we use guc with "-do" option
-	globus-url-copy -do "$$_transferList" "$_source" "$_destination"
+	globus-url-copy -do "$$_transferList" "$_recursive" "$_source" "$_destination"
 
 	if [[ "$?" == "0" && -e "$$_transferList" ]]; then
+		#  strip comment lines
+		sed -i -e '/^#.*$/d' "$$_transferList"
 		echo "$$_transferList"
 		return 0
 	else
@@ -1442,8 +1451,9 @@ listTransfer/getTransferSizeFromTransferList() {
 	#  |						  |						  |    |
 	#  "ftp://vserver1.asc:2811/~/files/test4/file.00355" "ftp://vserver2.asc:2811/~/files/test4/file.00355" 0,-1 size=0;modify=1328981550;mode=0644;
 
-	#  get all file sizes of the transfer list, one each line
-	local _fileSizes=$( cut -d ' ' -f 4 "$_transferList" | cut -d ';' -f 1 | cut -d '=' -f 2 )
+	#  get all file sizes of the transfer list, one each line and strip
+	#+ comment lines
+	local _fileSizes=$( grep -v '^#' "$_transferList" | cut -d ' ' -f 4 | cut -d ';' -f 1 | cut -d '=' -f 2 )
 
 	#  now sum up all file sizes
 	for _size in $( echo $_fileSizes ); do
@@ -1790,8 +1800,11 @@ elif [[ "$GSIFTP_SOURCE_URL" == "" || \
 ]]; then
     #  if there's a "-f" in the guc params, then source and destination URLs are
     #+ not needed.
-    if echo "$GSIFTP_PARAMS" | grep '\-f' &>/dev/null; then
-        :  # continue
+    GREP=$( echo "$GSIFTP_PARAMS" | grep -o '\-f [^\ ]*' )
+    if [[ $GREP != "" ]]; then
+	#  Also set variable for transfer list, so that there is no additional
+	#+ transfer list created.
+	_transferList=$( echo "$GREP" | cut -d ' ' -f 2 )
     else
         #  no, so output a usage message
         usage_msg
@@ -1851,6 +1864,7 @@ else
 		#  use default values
 		GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TRANSFER_LENGTH_PARAM $GSIFTP_TRANSFER_LENGTH"
 	fi
+
 	#  -tcp-bs|-tcp-buffer-size
 	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-tcp-bs [[:alnum:]]*|\-tcp-buffer-size [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
 	if [[ "$GREP" != "" ]]; then
@@ -1858,6 +1872,15 @@ else
 	else
 		#  use default values
 		GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TCP_BLOCKSIZE_PARAM $GSIFTP_TCP_BLOCKSIZE"
+	fi
+
+	#  -r|-recurse
+	recursiveTransferSet=1
+	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-r|\-recurse" )
+	if [[ "$GREP" != "" ]]; then
+		#  perform recursive transfer (=> when creating transfer list
+		#+ for transfer size and performance calculation also use "-r")
+		recursiveTransferSet=0
 	fi
 fi
 
@@ -2168,11 +2191,13 @@ elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" && \
 
 		#  calculate size from transfer list
 		#  create transfer list (the name will contain the current PID)
-		_transferList=$( listTransfer/createTransferList "$GSIFTP_SOURCE_URL" "$GSIFTP_TARGET_URL" )
-	
-		_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_transferList" )
-		rm -f "$_transferList"
-
+		if [[ ! "$_transferList" ]]; then
+			_tmpTransferList=$( listTransfer/createTransferList "$GSIFTP_SOURCE_URL" "$GSIFTP_TARGET_URL" )
+			_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_tmpTransferList" )
+			rm -f "$_tmpTransferList"
+		else
+			_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_transferList" )
+		fi
 		#echo "TIMING: After transfer length auto-detection: $( date )" 1>&2
 	
 		GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$_transferSize" )
