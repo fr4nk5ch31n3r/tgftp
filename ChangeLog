@@ -1,31 +1,75 @@
-2012-02-12  Frank Scheiner  <frank.scheiner@web.de>
+2013-01-14  Frank Scheiner  <frank.scheiner@web.de>
 
-*0.4.1 (tgftp):
-Introduced new option "--force-log-overwrite" to force tgftp to overwrite
-existing logfiles. Updated help and man page.
+tgftp dist v0.6.0:
 
-2012-02-13  Frank Scheiner  <frank.scheiner@web.de>
+*0.6.0 (tgftp)
+Introduced support for recursive transfers. Size auto-calculation now also works
+for recursive transfers.
 
-*0.4.1a (tgftp):
-Corrected two errors (local keyword used outside of a function and typo
-on variable name).
+2012-11-19  Frank Scheiner  <frank.scheiner@web.de>
 
-Corrected ChangeLog date of previous entry.
+tgftp dist v0.5.1:
 
-2012-03-16  Frank Scheiner  <frank.scheiner@web.de>
+module files:
+Corrected wrong variable name in the include file containing the local site
+configuration.
 
-tgftp dist v0.4.1b:
-Introduced own version number for tgftp distribution. The version number of
-the dist. is no longer determined by tgftp itself, as updates to other parts of
-the distribution would not justify a new version number for tgftp.
+2012-11-02  Frank Scheiner  <frank.scheiner@web.de>
 
-tgftp.1:
-Adapted manual page to new functionalities introduced in tgftp v0.4.1.
+tgftp dist v0.5.0:
 
-modulefile:
-Reintegrated a modulfile for tgftp.
+*0.5.0 (tgftp)
+The subshell introduced in v0.4.5 needed to be replaced, because the internal
+exit command just exited the subshell but should exit the main program if
+triggered. This is now fixed.
 
-Also readded PDF versions of manual pages. Adapted INSTALL file.
+Also added specific exit codes to tgftp for interoperability with other tools.
+
+If transfer length was given in Bytes (no unit at the end of the number), the
+used length was used wrongly (=> devided by ten as the last digit was removed).
+This is now fixed.
+
+In addition to that, tgftp can now calculate the transfer rate also when the
+transfer size is not given (by using some internal functions of gtransfer). It
+uses guc to get a dump of the files to be transferred and sums up all file sizes
+to get the transfer size.
+
+Reworked man page for tgftp.
+
+Also fixed some internal inconsistencies:
+* Error and warning messages no go to STDERR.
+* When tgftp and/or guc is intrrupted, tgftp won't calculate a (then wrong)
+  transfer rate
+  
+Reorganized directory structure of "source" files.
+
+2012-10-12  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.5:
+
+*0.4.5 (tgftp)
+The check for successful FIFO creation added in v0.4.4 contained an error, as
+the commands after the "||" keyword have to be enclosed in "(...)" (subshell) in
+order to work in the correct way. In v0.4.4 this lead to an unconditional exit.
+This is now fixed.
+
+2012-10-02  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.4:
+
+*0.4.4 (tgftp)
+Corrected small error in the shabang of the auto-tuning batchjob header. Also
+added a clause that checks if the needed FIFO could be created. If not tgftp
+will exit immediately.
+
+2012-09-25  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.4.3:
+
+*0.4.3 (tgftp)
+The SIGINT handler was not reset to the default handler due to a missing "-"
+between "trap" and "SIGINT" (hence v0.4.2 didn't behave "correctly" on SIGINT).
+This is now fixed.
 
 2012-04-15  Frank Scheiner  <frank.scheiner@web.de>
 
@@ -64,68 +108,33 @@ ____________
 [2] <http://www.cons.org/cracauer/sigint.html>
 [3] <https://github.com/fr4nk5ch31n3r/gtransfer>
 
-2012-09-25  Frank Scheiner  <frank.scheiner@web.de>
+2012-03-16  Frank Scheiner  <frank.scheiner@web.de>
 
-tgftp dist v0.4.3:
+tgftp dist v0.4.1b:
+Introduced own version number for tgftp distribution. The version number of
+the dist. is no longer determined by tgftp itself, as updates to other parts of
+the distribution would not justify a new version number for tgftp.
 
-*0.4.3 (tgftp)
-The SIGINT handler was not reset to the default handler due to a missing "-"
-between "trap" and "SIGINT" (hence v0.4.2 didn't behave "correctly" on SIGINT).
-This is now fixed.
+tgftp.1:
+Adapted manual page to new functionalities introduced in tgftp v0.4.1.
 
-2012-10-02  Frank Scheiner  <frank.scheiner@web.de>
+modulefile:
+Reintegrated a modulfile for tgftp.
 
-tgftp dist v0.4.4:
+Also readded PDF versions of manual pages. Adapted INSTALL file.
 
-*0.4.4 (tgftp)
-Corrected small error in the shabang of the auto-tuning batchjob header. Also
-added a clause that checks if the needed FIFO could be created. If not tgftp
-will exit immediately.
+2012-02-13  Frank Scheiner  <frank.scheiner@web.de>
 
-2012-10-12  Frank Scheiner  <frank.scheiner@web.de>
+*0.4.1a (tgftp):
+Corrected two errors (local keyword used outside of a function and typo
+on variable name).
 
-tgftp dist v0.4.5:
+Corrected ChangeLog date of previous entry.
 
-*0.4.5 (tgftp)
-The check for successful FIFO creation added in v0.4.4 contained an error, as
-the commands after the "||" keyword have to be enclosed in "(...)" (subshell) in
-order to work in the correct way. In v0.4.4 this lead to an unconditional exit.
-This is now fixed.
+2012-02-12  Frank Scheiner  <frank.scheiner@web.de>
 
-2012-11-02  Frank Scheiner  <frank.scheiner@web.de>
+*0.4.1 (tgftp):
+Introduced new option "--force-log-overwrite" to force tgftp to overwrite
+existing logfiles. Updated help and man page.
 
-tgftp dist v0.5.0:
-
-*0.5.0 (tgftp)
-The subshell introduced in v0.4.5 needed to be replaced, because the internal
-exit command just exited the subshell but should exit the main program if
-triggered. This is now fixed.
-
-Also added specific exit codes to tgftp for interoperability with other tools.
-
-If transfer length was given in Bytes (no unit at the end of the number), the
-used length was used wrongly (=> devided by ten as the last digit was removed).
-This is now fixed.
-
-In addition to that, tgftp can now calculate the transfer rate also when the
-transfer size is not given (by using some internal functions of gtransfer). It
-uses guc to get a dump of the files to be transferred and sums up all file sizes
-to get the transfer size.
-
-Reworked man page for tgftp.
-
-Also fixed some internal inconsistencies:
-* Error and warning messages no go to STDERR.
-* When tgftp and/or guc is intrrupted, tgftp won't calculate a (then wrong)
-  transfer rate
-  
-Reorganized directory structure of "source" files.
-
-2012-11-19  Frank Scheiner  <frank.scheiner@web.de>
-
-tgftp dist v0.5.1:
-
-module files:
-Corrected wrong variable name in the include file containing the local site
-configuration.
 
