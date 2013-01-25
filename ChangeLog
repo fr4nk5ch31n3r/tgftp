@@ -1,3 +1,11 @@
+2013-01-25  Frank Scheiner  <frank.scheiner@web.de>
+
+tgftp dist v0.6.1:
+
+*0.6.1 (tgftp):
+Defused a guc call, that failed when performing non-recursive transfers. Fixes
+#1.
+
 2013-01-14  Frank Scheiner  <frank.scheiner@web.de>
 
 tgftp dist v0.6.0:
