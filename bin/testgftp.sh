@@ -4,7 +4,7 @@
 
 :<<COPYRIGHT
 
-Copyright (C) 2010, 2011 Frank Scheiner, HLRS, Universitaet Stuttgart
+Copyright (C) 2010, 2011, 2014 Frank Scheiner, HLRS, Universitaet Stuttgart
 Copyright (C) 2012 Frank Scheiner
 
 The program is distributed under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.6.1"
+VERSION="0.6.2"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -520,7 +520,9 @@ SINGLE TEST Mode:
                         "cat PRE_COMMAND_OUTPUT.txt", which enables to include
                         output of the pre-command in the logfile (for example
                         network params of the target system or traceroute
-                        output, etc.). If not specified no comment is added.
+                        output, etc.). If not specified no comment is added. 
+                        Text only comments, meaning no command should be called,
+                        have to be preceded by "#"!
 
 [--pre-command "gsiftpTransferPreCommand"]
                         Determine the filename of the command that should be
@@ -528,9 +530,7 @@ SINGLE TEST Mode:
                         path must be included). Must be enclosed by double
                         quotes.A pre-command may consist of multiple commands
                         included in one script. If not specified no additional
-                        command will be excuted before the test. Text only
-                        comments, meaning no command should be called, have to
-                        be preceded by "#"!
+                        command will be excuted before the test.
 
 [--post-command "gsiftpTransferPostCommand"]
                         Determine the filename of the command that should be
