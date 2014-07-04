@@ -28,7 +28,10 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.7.0BETA4"
+# Reset the signal handler (possibly inherited from the caller) for SIGINT
+trap - SIGINT
+
+VERSION="0.7.0BETA5"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -1961,7 +1964,12 @@ echo 	"exec globus-url-copy" \
 #+ prior to the execution of the guc command.
 GSIFTP_START_DATE=$($DATE_BIN +%s)
 
-bash "$GSIFTP_TRANSFER_COMMAND" &
+#bash "$GSIFTP_TRANSFER_COMMAND" &
+if [[ ! $GSIFTP_TIMEOUT -eq 0 ]]; then
+       timeout "$GSIFTP_TIMEOUT" bash "$GSIFTP_TRANSFER_COMMAND"
+else
+       bash "$GSIFTP_TRANSFER_COMMAND"
+fi
 
 #globus-url-copy \
 #$GSIFTP_DEFAULT_PARAMS \
@@ -1969,15 +1977,15 @@ bash "$GSIFTP_TRANSFER_COMMAND" &
 #"$GSIFTP_SOURCE_URL" \
 #"$GSIFTP_TARGET_URL" &>$FIFO &
 
-GSIFTP_TRANSFER_COMMAND_PID="$!"
+#GSIFTP_TRANSFER_COMMAND_PID="$!"
 
 #  kill command after timeout
-if [[ ! $GSIFTP_TIMEOUT -eq 0 ]]; then
-	kill_after_timeout "$GSIFTP_TRANSFER_COMMAND_PID" "$GSIFTP_TIMEOUT" &
-fi
+#if [[ ! $GSIFTP_TIMEOUT -eq 0 ]]; then
+#	kill_after_timeout "$GSIFTP_TRANSFER_COMMAND_PID" "$GSIFTP_TIMEOUT" &
+#fi
 
 #  wait for pid and discard "lengthy" output
-wait "$GSIFTP_TRANSFER_COMMAND_PID" &>/dev/null
+#wait "$GSIFTP_TRANSFER_COMMAND_PID" &>/dev/null
 
 #  NOTICE:
 #+ If tgftp is used interactively, when hitting "Ctrl+C" and tgftp is already
