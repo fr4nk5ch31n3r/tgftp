@@ -4,7 +4,7 @@
 
 :<<COPYRIGHT
 
-Copyright (C) 2010 Frank Scheiner, HLRS, Universitaet Stuttgart
+Copyright (C) 2010, 2014 Frank Scheiner, HLRS, Universitaet Stuttgart
 
 The program is distributed under the terms of the GNU General Public License
 
@@ -36,13 +36,18 @@ GSIFTP_TRANSFER_COMMAND_OUTPUT
 GSIFTP_TRANSFER_START
 GSIFTP_TRANSFER_END
 GSIFTP_TRANSFER_ERROR
-GSIFTP_TRANSFER_RATE"
+GSIFTP_TRANSFER_RATE
+GSIFTP_TRANSFER_SIZE
+GSIFTP_TRANSFER_LIST
+TGFTP_COMMAND"
 
-VERSION="0.0.1"
+VERSION="0.1.0"
+
+SELF_NAME=$( basename $0 )
 
 version_msg()
 {
-        echo "$(basename $0) - v$VERSION"
+        echo "$SELF_NAME - v$VERSION"
 
         return
 }
@@ -145,7 +150,7 @@ while [[ "$1" != "" ]]; do
 			LOGFILE_SET="0"
 			shift 1
 		else
-			echo "ERROR: the parameter \"--file|-f\" can not be used multiple times."
+			echo "$SELF_NAME: the parameter \"--file|-f\" can not be used multiple times." 1>&2
 			exit 1
 		fi
 
@@ -157,7 +162,7 @@ while [[ "$1" != "" ]]; do
 			ATTRIBUTE_SET="0"
 			shift 1
 		else
-			echo "ERROR: the parameter \"--get-attribute|-a\" can not be used multiple times."
+			echo "$SELF_NAME: the parameter \"--get-attribute|-a\" can not be used multiple times." 1>&2
         	        exit 1
 		fi	
 
@@ -166,9 +171,21 @@ while [[ "$1" != "" ]]; do
 done
 
 if [[ $(echo $SUPPORTED_ATTS | grep -o $ATTRIBUTE) == "" ]]; then
-	echo "ERROR: The Attribute \"$ATTRIBUTE\" is not supported!"
+	echo "$SELF_NAME: the attribute \"$ATTRIBUTE\" is not supported!" 1>&2
 	exit 1
 fi
 
-sed -n -e "/<$ATTRIBUTE>/,/<\/$ATTRIBUTE>/p" <"$LOGFILE" | sed -e "/^<.*$ATTRIBUTE>$/d"
+if [[ ! -e "$LOGFILE" ]]; then
+	echo "$SELF_NAME: the logfile \"$LOGFILE\" does not exist!" 1>&2
+	exit 1
+fi
+
+ATTRIBUTE_VALUE=$( sed -n -e "/<$ATTRIBUTE>/,/<\/$ATTRIBUTE>/p" <"$LOGFILE" | sed -e "/^<.*$ATTRIBUTE>$/d" )
+
+if [[ "$ATTRIBUTE_VALUE" == "" ]]; then
+
+	echo "$SELF_NAME: attribute \"$ATTRIBUTE\" not found in \"$LOGFILE\" or empty." 1>&2
+else
+	echo "$ATTRIBUTE_VALUE"
+fi
 
