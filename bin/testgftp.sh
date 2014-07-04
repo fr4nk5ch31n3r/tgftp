@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.6.2"
+VERSION="0.7.0BETA1"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -38,6 +38,8 @@ SUPPORTED_BATCHFILE_VERSIONS="$VERSION"
 EXIT_VAL="0"
 
 _sigintReceived=0
+
+_selfName=$( basename $0 )
 
 ################################################################################
 #  EXIT CODES
@@ -956,7 +958,7 @@ process_batchfile()
         local FILE_VERSION=$($GREP_BIN "#%tgftp" <$FILE | $SED_BIN -e 's/^#%tgftp%v//')
 
         if ! echo "$SUPPORTED_BATCHFILE_VERSIONS" | $GREP_BIN "$FILE_VERSION" &>/dev/null; then
-                echo "ERROR: $(basename $0) batch file version \"v$FILE_VERSION\" not supported!" 1>&2
+                echo "$_selfName: tgftp batch file version \"v$FILE_VERSION\" not supported!" 1>&2
                 exit "$_tgftp_exit_usage"
         fi
 	
@@ -1068,7 +1070,7 @@ process_batchfile()
 		#+ only 9 fields.
 		elif [[ `echo "${#CSV_LINE[@]}"` -lt "9" ]]; then
 			echo "Fields: ${#CSV_LINE[@]}"
-			echo "WARNING: Line $LINE_NUMBER: Less than 10 fields! Skipping line!" 1>&2
+			echo "$_selfName: line $LINE_NUMBER has less than 10 fields! Skipping line!" 1>&2
 			LINE_NUMBER=$(( $LINE_NUMBER + 1 ))
 		        continue
 		fi
@@ -1106,7 +1108,7 @@ process_batchfile()
 		        GSIFTP_SOURCE_URL="${CSV_LINE[0]}"
 		else
 		        #  if empty, print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"source\" field is empty! Skipping line!" 1>&2
+		        echo "$_selfName: in line $LINE_NUMBER: \"source\" field is empty! Skipping line!" 1>&2
 			continue
 		fi
 		
@@ -1115,7 +1117,7 @@ process_batchfile()
 		        GSIFTP_TARGET_URL="${CSV_LINE[1]}"
 		else
 		        #  if empty, print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"target\" field is empty! Skipping line!" 1>&2
+		        echo "$_selfName: in line $LINE_NUMBER: \"target\" field is empty! Skipping line!" 1>&2
 			continue
 		fi
 		
@@ -1132,7 +1134,7 @@ process_batchfile()
 		        :
 		else
 		        #  print out warning and skip line
-		        echo "WARNING: Line $LINE_NUMBER: \"connection-test\" field is empty! Skipping line!" 1>&2
+		        echo "$_selfName: in line $LINE_NUMBER: \"connection-test\" field is empty! Skipping line!" 1>&2
 		        continue
 		fi
 		
@@ -1295,11 +1297,11 @@ process_batchfile()
 
 		if [[ "$TGFTP_COMMAND_EXIT_VALUE" == "0" ]]; then
 			if [[ ! $autoTuning -eq 0 ]]; then
-				echo -e "Test #$DATA_LINE_NUMBER was successful!"
+				echo -e "$_selfName: test #$DATA_LINE_NUMBER was successful!"
 			fi
 		else
 			if [[ ! $autoTuning -eq 0 ]]; then
-				echo -e "Test #$DATA_LINE_NUMBER failed (for at least one run)!"
+				echo -e "$_selfName: test #$DATA_LINE_NUMBER failed (for at least one run)!"
 			fi
 		fi
 
@@ -1649,7 +1651,7 @@ while [[ "$1" != "" ]]; do
 			FORCE_LOG_OVERWRITE_SET="0"
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--force-log-overwrite\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--force-log-overwrite\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1662,7 +1664,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--source|-s\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--source|-s\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1675,7 +1677,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--target|-t\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--target|-t\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1686,7 +1688,7 @@ while [[ "$1" != "" ]]; do
 			CONNECTION_TEST_SET="0"         
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--connection-test|-c\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--connection-test|-c\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1697,7 +1699,7 @@ while [[ "$1" != "" ]]; do
 			AUTO_TUNING_SET="0"         
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--auto-tune|-a\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--auto-tune|-a\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1710,7 +1712,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--timeout|-k\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--timeout|-k\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1723,7 +1725,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--batchfile|-f\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--batchfile|-f\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1736,7 +1738,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--log-filename\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--log-filename\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1749,7 +1751,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--log-comment\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--log-comment\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1762,7 +1764,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--pre-command\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--pre-command\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1775,7 +1777,7 @@ while [[ "$1" != "" ]]; do
 			shift 1
 		else
 			#  duplicate usage of this parameter
-			echo "ERROR: The parameter \"--post-command\" cannot be used multiple times!"
+			echo "$_selfName: the parameter \"--post-command\" cannot be used multiple times!" 1>&2
 			exit "$_tgftp_exit_usage"
 		fi
 
@@ -1791,7 +1793,7 @@ if [[ "$GSIFTP_BATCHFILE_SET" == "0" ]]; then
                 process_batchfile "$GSIFTP_BATCHFILE"
                 exit "$?"
         else
-                echo "ERROR: batchfile \"$GSIFTP_BATCHFILE\" not existing!" 1>&2
+                echo "$_selfName: batchfile \"$GSIFTP_BATCHFILE\" not existing!" 1>&2
                 exit "$_tgftp_exit_usage"
         fi
 
@@ -1828,7 +1830,7 @@ if [[ "$GSIFTP_TRANSFER_LOG_FILENAME" != "" && -e "$GSIFTP_TRANSFER_LOG_FILENAME
         if [[ "$FORCE_LOG_OVERWRITE_SET" == "0" ]]; then
             : # do nothing, just continue
         else
-            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
+            echo "$_selfName: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
             exit "$_tgftp_exit_usage"
         fi
 fi
@@ -1905,7 +1907,7 @@ fi
 
 #  create FIFO
 if ! create_fifo $FIFO; then
-	echo "ERROR: FIFO \"$FIFO\" couldn't be created." 1>&2
+	echo "$_selfName: FIFO \"$FIFO\" couldn't be created." 1>&2
 	exit "$_tgftp_exit_software"
 fi
 
@@ -2020,7 +2022,7 @@ if [[ -e "$GSIFTP_TRANSFER_LOG_FILENAME" ]]; then
             #  truncate file
             > "$GSIFTP_TRANSFER_LOG_FILENAME"
         else
-            echo "ERROR: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
+            echo "$_selfName: the logfile named \"$GSIFTP_TRANSFER_LOG_FILENAME\" already exists! Refusing to overwrite!" 1>&2
             exit "$_tgftp_exit_usage"
         fi
 fi
@@ -2113,7 +2115,7 @@ if [[ -e "${GSIFTP_TRANSFER_COMMAND}_KILLED" ]]; then
 "ERROR: \"globus-url-copy\" timed out."\
 "\n</GSIFTP_TRANSFER_ERROR>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
-        echo -e "\nERROR: \"globus-url-copy\" timed out. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
+        echo -e "\n$_selfName: \"globus-url-copy\" timed out. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
         exit "$_tgftp_exit_timeout"
 
 #  Was guc interrupted?
@@ -2123,7 +2125,7 @@ elif [[ $_gucSIGINTed -eq 1 ]]; then
 "ERROR: \"globus-url-copy\" was interrupted.\n"\
 "</GSIFTP_TRANSFER_ERROR>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
-        echo -e "\nERROR: \"globus-url-copy\" was interrupted." 1>&2
+        echo -e "\n$_selfName: \"globus-url-copy\" was interrupted." 1>&2
 
 	if [[ $_sigintReceived -eq 0 ]]; then
 		#echo "($$) DEBUG: SIGINT received." 1>&2
@@ -2214,7 +2216,7 @@ elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" && \
 	
 elif [[ "$CONNECTION_TEST_SET" == "0" ]]; then
 	#  connection test, no calculation done
-	echo -e "\nINFO: Connection test => no performance calculation done!"
+	echo -e "\n$_selfName: connection test => no performance calculation done!"
 fi
 ################################################################################
 
@@ -2231,7 +2233,7 @@ if [[ "$GSIFTP_TRANSFER_POST_COMMAND" != "" && \
 	wait $!
 fi
 
-echo -e "\nPlease see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
+echo -e "\n$_selfName: please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details."
 
 exit "$GSIFTP_EXIT_VALUE"
 
