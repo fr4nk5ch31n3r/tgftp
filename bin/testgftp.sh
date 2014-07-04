@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.7.0BETA2"
+VERSION="0.7.0BETA3"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -2156,7 +2156,7 @@ elif [[ "$GSIFTP_EXIT_VALUE" != "0" ]]; then
 "ERROR: \"globus-url-copy\" failed."\
 "\n</GSIFTP_TRANSFER_ERROR>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
-        echo -e "\nERROR: \"globus-url-copy\" failed. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
+        echo -e "\n$_selfName: \"globus-url-copy\" failed. Please see \""$GSIFTP_TRANSFER_LOG_FILENAME"\" for details." 1>&2
         exit 1        
         
 fi
@@ -2169,6 +2169,21 @@ if [[ "$CONNECTION_TEST_SET" != "0" && \
       "$GSIFTP_TRANSFER_LENGTH" != "" && \
       ! $_gucSIGINTed -eq 1 \
 ]]; then
+
+	_tmpTransferList=$( listTransfer/createTransferList "$GSIFTP_SOURCE_URL" "$GSIFTP_TARGET_URL" )
+	# save transfer list
+	echo -en \
+"<GSIFTP_TRANSFER_LIST>\n"\
+"$( cat $_tmpTransferList )\n"\
+"</GSIFTP_TRANSFER_LIST>\n"\
+	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
+	
+	# save transfer size
+	echo -en \
+"<GSIFTP_TRANSFER_SIZE>\n"\
+"$GSIFTP_TRANSFER_LENGTH B\n"\
+"</GSIFTP_TRANSFER_SIZE>\n"\
+	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 
 	GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$GSIFTP_TRANSFER_LENGTH" )
 
@@ -2204,11 +2219,33 @@ elif [[ "$GSIFTP_TRANSFER_LENGTH" == "" && \
 		if [[ ! "$_transferList" ]]; then
 			_tmpTransferList=$( listTransfer/createTransferList "$GSIFTP_SOURCE_URL" "$GSIFTP_TARGET_URL" )
 			_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_tmpTransferList" )
+			# save transfer list
+			echo -en \
+"<GSIFTP_TRANSFER_LIST>\n"\
+"$( cat $_tmpTransferList )\n"\
+"</GSIFTP_TRANSFER_LIST>\n"\
+			>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 			rm -f "$_tmpTransferList"
 		else
 			_transferSize=$( listTransfer/getTransferSizeFromTransferList "$_transferList" )
+			# save transfer list
+			echo -en \
+"<GSIFTP_TRANSFER_LIST>\n"\
+"$( cat $_transferList )\n"\
+"</GSIFTP_TRANSFER_LIST>\n"\
+			>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 		fi
+		
+
+		
 		#echo "TIMING: After transfer length auto-detection: $( date )" 1>&2
+		
+		# save transfer size
+		echo -en \
+"<GSIFTP_TRANSFER_SIZE>\n"\
+"$_transferSize B\n"\
+"</GSIFTP_TRANSFER_SIZE>\n"\
+		>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 	
 		GSIFTP_TRANSFER_RATE=$( tgftp/calcTransferRate "$GSIFTP_START_DATE" "$GSIFTP_END_DATE" "$_transferSize" )
 
