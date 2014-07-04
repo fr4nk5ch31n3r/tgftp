@@ -31,7 +31,11 @@ COPYRIGHT
 # Reset the signal handler (possibly inherited from the caller) for SIGINT
 trap - SIGINT
 
-VERSION="0.7.0BETA5"
+# This is needed on SLES10, as otherwise, mktemp will use this env var as dir
+# for its created files there (see manpage for details).
+unset TMPDIR
+
+VERSION="0.7.0BETA6"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
