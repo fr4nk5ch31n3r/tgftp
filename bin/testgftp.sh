@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.7.0BETA3"
+VERSION="0.7.0BETA4"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -1425,9 +1425,16 @@ listTransfer/createTransferList() {
 	else
 		local _recursive=""
 	fi
+	
+	# disable data channel authentication if requested
+	if [[ $noDataChannelAuthSet -eq 0 ]]; then
+		local _dataChannelAuth="-nodcau"
+	else
+		local _dataChannelAuth=""
+	fi
 
 	#  to get the transfer list we use guc with "-do" option
-	globus-url-copy -do "$$_transferList" $_recursive "$_source" "$_destination"
+	globus-url-copy -do "$$_transferList" $_recursive $_dataChannelAuth "$_source" "$_destination" &>/dev/null
 
 	if [[ "$?" == "0" && -e "$$_transferList" ]]; then
 		#  strip comment lines
@@ -1885,6 +1892,14 @@ else
 		#  perform recursive transfer (=> when creating transfer list
 		#+ for transfer size and performance calculation also use "-r")
 		recursiveTransferSet=0
+	fi
+	
+	# -nodcau
+	noDataChannelAuthSet=1
+	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-nodcau" )
+	if [[ "$GREP" != "" ]]; then
+		# disable data channel authentication
+		noDataChannelAuthSet=0
 	fi
 fi
 
