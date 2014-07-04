@@ -28,7 +28,7 @@ contract number RI-222919.
 
 COPYRIGHT
 
-VERSION="0.7.0BETA1"
+VERSION="0.7.0BETA2"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -40,6 +40,8 @@ EXIT_VAL="0"
 _sigintReceived=0
 
 _selfName=$( basename $0 )
+
+_tgftpCommandLine="$0 $@"
 
 ################################################################################
 #  EXIT CODES
@@ -2047,6 +2049,12 @@ else
 fi
 ################################################################################
 
+# save tgftp command line
+echo -en \
+"<TGFTP_COMMAND>\n"\
+"$_tgftpCommandLine\n"\
+"</TGFTP_COMMAND>\n"\
+>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 
 #  save "globus-url-copy" command
 echo -en \
