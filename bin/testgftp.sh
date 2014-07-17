@@ -35,7 +35,7 @@ trap - SIGINT
 # for its created files there (see manpage for details).
 unset TMPDIR
 
-VERSION="0.7.0BETA6"
+VERSION="0.7.0"
 
 #  The version numbering of tgftp tries to follow the "Semantic Versioning 
 #+ 2.0.0-rc.1" specification avilable on <http://semver.org/>.
@@ -1878,6 +1878,8 @@ else
 	GREP=$( echo $GSIFTP_PARAMS | $EGREP_BIN -o "\-len [[:alnum:]]*|\-partial-length [[:alnum:]]*" | $GREP_BIN -o " [[:alnum:]]*" )
 	if [[ "$GREP" != "" ]]; then
 		GSIFTP_TRANSFER_LENGTH="$GREP"
+		# Trim whitspace
+		GSIFTP_TRANSFER_LENGTH=${GSIFTP_TRANSFER_LENGTH// /}
 	else		
 		#  use default values
 		GSIFTP_DEFAULT_PARAMS="$GSIFTP_DEFAULT_PARAMS $GSIFTP_TRANSFER_LENGTH_PARAM $GSIFTP_TRANSFER_LENGTH"
@@ -2205,10 +2207,14 @@ if [[ "$CONNECTION_TEST_SET" != "0" && \
 "</GSIFTP_TRANSFER_LIST>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 	
+	sizeUnit=$( get_unit $GSIFTP_TRANSFER_LENGTH )
+	# remove any trailing size unit from transfer size
+	GSIFTP_TRANSFER_LENGTH_W_O_UNIT=${GSIFTP_TRANSFER_LENGTH%%[[:alpha:]]}
+
 	# save transfer size
 	echo -en \
 "<GSIFTP_TRANSFER_SIZE>\n"\
-"$GSIFTP_TRANSFER_LENGTH B\n"\
+"$GSIFTP_TRANSFER_LENGTH_W_O_UNIT $sizeUnit\n"\
 "</GSIFTP_TRANSFER_SIZE>\n"\
 	>> "$GSIFTP_TRANSFER_LOG_FILENAME"
 
