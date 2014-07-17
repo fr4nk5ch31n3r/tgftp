@@ -1,3 +1,21 @@
+2014-07-17  Frank Scheiner  <scheiner@hlrs.de>
+
+tgftp tools v0.7.0:
+
+*0.7.0 (tgftp):
+Introduced new logfile fields for transfer list, transfer size and used tgftp
+command (GSIFTP_TRANSFER_LIST, GSIFTP_TRANSFER_SIZE, TGFTP_COMMAND). These new
+fields (in addition to the already supported fields) allow for a detailed
+reproduction of a test. This is useful for reproducing and confirming test
+results. Also updated program output for easer recognition. Added support for
+disabling the data channel authentication to allow tests with Debian based
+GridFTP servers, which have problems with data channel authentication. The guc
+transfer command is now executed in the foreground (needed for successful job
+hold and release of a gtransfer job by gsatellite).
+
+*0.2.0 (tgftp_log):
+Added support for the newly added logfile fields.
+
 2013-01-25  Frank Scheiner  <frank.scheiner@web.de>
 
 tgftp dist v0.6.1:
